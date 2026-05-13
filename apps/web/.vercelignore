@@ -1,0 +1,21 @@
+# Exclude files unnecessary for the Vercel build
+
+# Other apps (not part of this deployment)
+apps/api/
+apps/mobile/
+apps/admin/
+
+# Infrastructure / docs
+infrastructure/
+docs/
+.husky/
+
+# Local artifacts
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Environment files (secrets set in Vercel dashboard)
+.env
+.env.*
+!.env.example

@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
+}
+
+// Supabase uses PgBouncer for connection pooling. The pooled
+// connection string goes in DATABASE_URL; the direct (non-pooled)
+// connection goes in DATABASE_DIRECT_URL. Prisma uses directUrl
+// for migrations and introspection, and url for runtime queries.
+//
+// For local development without Supabase, both can point to the
+// same Postgres instance (directUrl is optional).
+//
+// Models will be added as features are implemented.

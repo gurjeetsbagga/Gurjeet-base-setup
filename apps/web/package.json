@@ -1,0 +1,35 @@
+{
+  "name": "@auryn/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Auryn web application — Next.js App Router",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint src/ --max-warnings 0",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next .turbo node_modules/.cache *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@auryn/types": "workspace:*",
+    "@auryn/utils": "workspace:*",
+    "next": "^15",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@auryn/config": "workspace:*",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "eslint-config-prettier": "^10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,15 @@
+commit_msg=$(cat "$1")
+
+# Enforce minimum commit message length
+if [ ${#commit_msg} -lt 10 ]; then
+  echo "ERROR: Commit message must be at least 10 characters."
+  exit 1
+fi
+
+# Block commits with generic messages
+case "$commit_msg" in
+  fix|update|changes|wip|test|asdf|temp|""|" ")
+    echo "ERROR: Please write a meaningful commit message."
+    exit 1
+    ;;
+esac

@@ -1,0 +1,33 @@
+{
+  "extends": "./packages/config/typescript/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@auryn/config/*": ["./packages/config/*"],
+      "@auryn/types/*": ["./packages/types/src/*"],
+      "@auryn/utils/*": ["./packages/utils/src/*"],
+      "@auryn/validation/*": ["./packages/validation/src/*"],
+      "@auryn/ai/*": ["./packages/ai/src/*"],
+      "@auryn/sdk/*": ["./packages/sdk/src/*"],
+      "@auryn/ui/*": ["./packages/ui/src/*"],
+      "@auryn/design-system/*": ["./packages/design-system/src/*"],
+      "@auryn/memory/*": ["./packages/memory/src/*"],
+      "@auryn/prompts/*": ["./packages/prompts/src/*"]
+    }
+  },
+  "include": [],
+  "references": [
+    { "path": "apps/web" },
+    { "path": "apps/api" },
+    { "path": "apps/mobile" },
+    { "path": "apps/admin" },
+    { "path": "packages/types" },
+    { "path": "packages/utils" },
+    { "path": "packages/validation" },
+    { "path": "packages/ai" },
+    { "path": "packages/sdk" },
+    { "path": "packages/ui" },
+    { "path": "packages/design-system" },
+    { "path": "packages/memory" },
+    { "path": "packages/prompts" }
+  ]
+}

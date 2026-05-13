@@ -1,0 +1,10 @@
+{
+  "extends": "@auryn/config/typescript/expo.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "*.ts", "*.tsx", ".expo/types/**/*.ts"],
+  "exclude": ["node_modules", "dist", ".expo"]
+}
