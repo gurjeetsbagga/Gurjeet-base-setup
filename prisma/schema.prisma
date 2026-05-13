@@ -1,0 +1,13 @@
+// Auryn — Prisma file shell (no models yet).
+// PostgreSQL; future pgvector / structured memory per docs/architecture/backend-architecture.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Models (User, Conversation, Message, AdminInstruction, AIActionLog, …) added in implementation phase.
