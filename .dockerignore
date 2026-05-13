@@ -1,0 +1,36 @@
+# Root .dockerignore for monorepo Docker builds.
+# Railway/Docker context is the repo root; exclude heavy/unnecessary paths.
+
+node_modules
+**/node_modules
+.git
+.turbo
+**/.turbo
+**/dist
+**/.next
+**/coverage
+**/*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+apps/**/.env
+apps/**/.env.*
+
+# Documentation and non-build assets
+docs/
+infrastructure/
+.husky/
+*.md
+!packages/*/README.md
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Mobile (not needed for API builds)
+apps/mobile/
+apps/admin/
+apps/web/

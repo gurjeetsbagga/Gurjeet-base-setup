@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Auryn",
+    "slug": "auryn",
+    "version": "0.0.1",
+    "scheme": "auryn",
+    "platforms": ["ios", "android"],
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFBFC"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.auryn.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAFBFC"
+      },
+      "package": "com.auryn.app"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": ["expo-router"]
+  }
+}

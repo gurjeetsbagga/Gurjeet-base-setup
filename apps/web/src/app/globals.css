@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+ * Auryn design tokens — semantic color system.
+ *
+ * All UI surfaces reference these variables. Override per-theme
+ * by swapping values inside @media (prefers-color-scheme: dark)
+ * or a [data-theme="dark"] selector when dark-mode ships.
+ */
+
+@theme {
+  /* ── Typography ──────────────────────────────────────────── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ── Colors ──────────────────────────────────────────────── */
+
+  /* Brand */
+  --color-primary: #4f6d7a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #7ba7bc;
+  --color-secondary-foreground: #1a2b33;
+  --color-accent: #a8d5ba;
+  --color-accent-foreground: #1a2b33;
+
+  /* Surfaces */
+  --color-background: #fafbfc;
+  --color-foreground: #1a2b33;
+  --color-surface: #ffffff;
+  --color-surface-foreground: #1a2b33;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+
+  /* Feedback */
+  --color-success: #22c55e;
+  --color-success-foreground: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #1a2b33;
+  --color-error: #ef4444;
+  --color-error-foreground: #ffffff;
+
+  /* Borders & misc */
+  --color-border: #e2e8f0;
+  --color-ring: #4f6d7a;
+  --color-input: #e2e8f0;
+
+  /* ── Spacing scale ───────────────────────────────────────── */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+}
+
+/* ── Base resets ──────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  border-color: var(--color-border);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

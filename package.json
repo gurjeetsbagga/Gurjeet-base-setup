@@ -1,0 +1,55 @@
+{
+  "name": "auryn",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Auryn — AI wellness companion monorepo",
+  "packageManager": "pnpm@11.1.1",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:ci": "turbo run test:ci",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "dev:web": "turbo run dev --filter=@auryn/web",
+    "dev:api": "turbo run start:dev --filter=@auryn/api",
+    "dev:mobile": "turbo run start --filter=@auryn/mobile",
+    "dev:admin": "turbo run dev --filter=@auryn/admin",
+    "build:web": "turbo run build --filter=@auryn/web",
+    "build:api": "turbo run build --filter=@auryn/api",
+    "build:packages": "turbo run build --filter='./packages/*'",
+    "db:generate": "turbo run prisma:generate --filter=@auryn/api",
+    "db:migrate": "turbo run prisma:migrate --filter=@auryn/api",
+    "db:push": "turbo run prisma:push --filter=@auryn/api",
+    "db:studio": "turbo run prisma:studio --filter=@auryn/api",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs}": [
+      "prettier --write",
+      "eslint --fix --no-warn-ignored --max-warnings 0"
+    ],
+    "*.{json,md,css,yaml,yml}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "eslint": "^9",
+    "eslint-config-prettier": "^10",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
+    "prettier": "^3",
+    "turbo": "^2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8"
+  }
+}

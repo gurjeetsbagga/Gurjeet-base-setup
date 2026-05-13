@@ -1,0 +1,23 @@
+# Build outputs
+dist/
+.next/
+build/
+coverage/
+expo-web/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Generated
+*.tsbuildinfo
+pnpm-lock.yaml
+
+# Turbo
+.turbo/
+
+# Expo
+.expo/
+
+# Prisma
+prisma/dev.db
