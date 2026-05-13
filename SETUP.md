@@ -20,6 +20,7 @@ Install Node + pnpm via your usual toolchain ([nvm](https://github.com/nvm-sh/nv
 ---
 
 ## Clone repository
+## Clone repository
 
 ```bash
 git clone <repository-url>
@@ -45,8 +46,6 @@ Typical first sync:
 git checkout development
 git pull
 ```
-
-Full conventions: **[`docs/engineering/branch-strategy.md`](docs/engineering/branch-strategy.md)**.
 
 ---
 
@@ -77,7 +76,6 @@ Edit **`.env`** locally only. Never commit secrets.
 | Web | `NEXT_PUBLIC_APP_URL` (when Next.js exists) |
 | Supabase / AWS | Commented placeholders in `.env.example` — use when integrated |
 
-Details: **[`docs/engineering/setup-guide.md`](docs/engineering/setup-guide.md)** §6.
 
 ---
 
@@ -108,14 +106,3 @@ When scaffolding lands, update **this file** in the same PR that adds `pnpm inst
 
 ---
 
-## Where to read next
-
-| Doc | Why |
-|-----|-----|
-| [`docs/engineering/setup-guide.md`](docs/engineering/setup-guide.md) | Extended orientation, stack tables, status. |
-| [`docs/engineering/coding-standards.md`](docs/engineering/coding-standards.md) | TypeScript, security, PR expectations. |
-| [`REPOSITORY-STRUCTURE.md`](REPOSITORY-STRUCTURE.md) | Folder tree and module intent. |
-| [`AGENTS.md`](AGENTS.md) | Agent + engineer guardrails. |
-| [`docs/references/INDEX.md`](docs/references/INDEX.md) | Full documentation map. |
-
-**Optional deep reference** (agents / advanced validation): [`docs/internal/README.md`](docs/internal/README.md).
