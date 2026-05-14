@@ -11,7 +11,10 @@
     "lint": "eslint src/ --max-warnings 0",
     "lint:fix": "eslint src/ --fix",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next .turbo node_modules/.cache *.tsbuildinfo"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage",
+    "clean": "rm -rf .next .turbo node_modules/.cache *.tsbuildinfo coverage"
   },
   "dependencies": {
     "@auryn/types": "workspace:*",
@@ -24,12 +27,18 @@
     "@auryn/config": "workspace:*",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "eslint-config-next": "^15",
     "eslint-config-prettier": "^10",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.6"
   }
 }

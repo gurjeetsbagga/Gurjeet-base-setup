@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigType } from "@nestjs/config";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { supabaseConfig } from "./supabase.config";
+import { supabaseConfig } from "../../config/configs/supabase.config";
 
 /**
  * Thin wrapper around the Supabase JS client.
@@ -19,27 +20,26 @@ export class SupabaseService implements OnModuleInit {
   private adminClient: SupabaseClient | null = null;
   private anonClient: SupabaseClient | null = null;
 
+  constructor(
+    @Inject(supabaseConfig.KEY)
+    private readonly config: ConfigType<typeof supabaseConfig>,
+  ) {}
+
   onModuleInit() {
-    if (!supabaseConfig.enabled) {
+    if (!this.config.enabled || !this.config.url || !this.config.serviceRoleKey) {
       this.logger.warn(
         "Supabase is not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to enable.",
       );
       return;
     }
 
-    this.adminClient = createClient(supabaseConfig.url, supabaseConfig.serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+    this.adminClient = createClient(this.config.url, this.config.serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    if (supabaseConfig.anonKey) {
-      this.anonClient = createClient(supabaseConfig.url, supabaseConfig.anonKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
+    if (this.config.anonKey) {
+      this.anonClient = createClient(this.config.url, this.config.anonKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
       });
     }
 
@@ -58,7 +58,7 @@ export class SupabaseService implements OnModuleInit {
 
   /** Whether Supabase is configured and ready. */
   get isEnabled(): boolean {
-    return supabaseConfig.enabled && this.adminClient !== null;
+    return this.config.enabled && this.adminClient !== null;
   }
 
   /**
@@ -66,16 +66,13 @@ export class SupabaseService implements OnModuleInit {
    * Useful for making requests that respect RLS as a particular user.
    */
   forUser(accessToken: string): SupabaseClient | null {
-    if (!supabaseConfig.enabled || !supabaseConfig.anonKey) return null;
+    if (!this.config.enabled || !this.config.url || !this.config.anonKey) return null;
 
-    return createClient(supabaseConfig.url, supabaseConfig.anonKey, {
+    return createClient(this.config.url, this.config.anonKey, {
       global: {
         headers: { Authorization: `Bearer ${accessToken}` },
       },
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     });
   }
 }

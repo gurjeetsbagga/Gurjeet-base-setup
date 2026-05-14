@@ -1,9 +1,20 @@
-/**
- * App-level configuration.
- *
- * NestJS ConfigModule is loaded globally in app.module.ts.
- * Add typed config namespaces here as the app grows:
- *   - database.config.ts
- *   - auth.config.ts
- *   - ai.config.ts
- */
+export {
+  appConfig,
+  databaseConfig,
+  authConfig,
+  openaiConfig,
+  supabaseConfig,
+  rateLimitConfig,
+} from "./configs";
+
+export type {
+  AppConfig,
+  DatabaseConfig,
+  AuthConfig,
+  OpenAIConfig,
+  SupabaseConfig,
+  RateLimitConfig,
+} from "./configs";
+
+export { redactApiKey } from "./configs/openai.config";
+export { validateSecretBoundaries, safeOpenAiStatus } from "./validate-secrets";
