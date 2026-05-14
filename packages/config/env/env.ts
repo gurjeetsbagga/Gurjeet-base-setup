@@ -44,8 +44,14 @@ export const apiEnv = defineEnv({
   API_JWT_SECRET: { required: true },
   API_JWT_EXPIRES_IN: { required: false, default: "15m" },
   API_JWT_REFRESH_EXPIRES_IN: { required: false, default: "7d" },
-  API_THROTTLE_TTL: { required: false, default: "60" },
-  API_THROTTLE_LIMIT: { required: false, default: "100" },
+  RATE_LIMIT_GLOBAL_TTL: { required: false, default: "60" },
+  RATE_LIMIT_GLOBAL_LIMIT: { required: false, default: "100" },
+  RATE_LIMIT_AI_TTL: { required: false, default: "60" },
+  RATE_LIMIT_AI_LIMIT: { required: false, default: "20" },
+  RATE_LIMIT_AUTH_TTL: { required: false, default: "60" },
+  RATE_LIMIT_AUTH_LIMIT: { required: false, default: "10" },
+  RATE_LIMIT_STRICT_TTL: { required: false, default: "60" },
+  RATE_LIMIT_STRICT_LIMIT: { required: false, default: "5" },
 });
 
 /* ------------------------------------------------------------------ */

@@ -1,8 +1,22 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { AppController } from "./app.controller";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "./prisma/prisma.module";
 import { SupabaseModule } from "./integrations/supabase";
+import { RequestIdMiddleware } from "./common/middleware";
+import { AurynThrottlerGuard } from "./common/throttle";
+import { THROTTLE_GLOBAL, THROTTLE_AI, THROTTLE_AUTH, THROTTLE_STRICT } from "./common/throttle";
+import {
+  appConfig,
+  databaseConfig,
+  authConfig,
+  openaiConfig,
+  supabaseConfig,
+  rateLimitConfig,
+} from "./config";
+import type { RateLimitConfig } from "./config";
+import { HealthModule } from "./modules/health/health.module";
 import { AiModule } from "./modules/ai/ai.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -13,17 +27,38 @@ import { RecommendationsModule } from "./modules/recommendations/recommendations
 import { PhysicianosModule } from "./modules/physicianos/physicianos.module";
 import { OrchestrationModule } from "./modules/orchestration/orchestration.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { ActionValidationModule } from "./modules/action-validation/action-validation.module";
+import { AuditLogModule } from "./modules/audit-logs/audit-logs.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env", "../../.env"],
+      load: [appConfig, databaseConfig, authConfig, openaiConfig, supabaseConfig, rateLimitConfig],
+    }),
+
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const cfg = configService.get<RateLimitConfig>("rateLimit")!;
+        return {
+          throttlers: [
+            { name: THROTTLE_GLOBAL, ttl: cfg.globalTtl * 1000, limit: cfg.globalLimit },
+            { name: THROTTLE_AI, ttl: cfg.aiTtl * 1000, limit: cfg.aiLimit },
+            { name: THROTTLE_AUTH, ttl: cfg.authTtl * 1000, limit: cfg.authLimit },
+            { name: THROTTLE_STRICT, ttl: cfg.strictTtl * 1000, limit: cfg.strictLimit },
+          ],
+        };
+      },
     }),
 
     PrismaModule,
     SupabaseModule,
 
+    AuditLogModule,
+
+    HealthModule,
     AiModule,
     AuthModule,
     UsersModule,
@@ -34,7 +69,17 @@ import { AdminModule } from "./modules/admin/admin.module";
     PhysicianosModule,
     OrchestrationModule,
     AdminModule,
+    ActionValidationModule,
   ],
-  controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AurynThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes("*");
+  }
+}

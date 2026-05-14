@@ -1,2 +1,13 @@
 export { AllExceptionsFilter } from "./filters/http-exception.filter";
+export { ErrorCode } from "./filters/error-codes";
+export type { ApiErrorResponse, FieldError } from "./filters/error-codes";
 export { LoggingInterceptor } from "./interceptors/logging.interceptor";
+export { StructuredLogger } from "./logger";
+export { RequestIdMiddleware, REQUEST_ID_HEADER } from "./middleware";
+export { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
+export { Public, IS_PUBLIC_KEY } from "./decorators/public.decorator";
+export { CurrentUser } from "./decorators/current-user.decorator";
+export { Roles, ROLES_KEY } from "./decorators/roles.decorator";
+export { PaginationDto, IdParamDto, SortDto } from "./dto";
+export type { SortOrder } from "./dto";
+export { IsSafeText, IsNotBlank } from "./validators";

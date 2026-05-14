@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
 }
 
 datasource db {
@@ -15,5 +16,465 @@ datasource db {
 //
 // For local development without Supabase, both can point to the
 // same Postgres instance (directUrl is optional).
+
+// ═══════════════════════════════════════════════════════════════
+//  ENUMS
+// ═══════════════════════════════════════════════════════════════
+
+enum UserRole {
+  USER
+  ADMIN
+  PROVIDER
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum MessageStatus {
+  PENDING
+  STREAMING
+  COMPLETED
+  FAILED
+}
+
+enum MemoryEntryType {
+  CONVERSATION_SUMMARY
+  TOPIC_EXTRACTION
+  USER_PREFERENCE
+  HEALTH_INSIGHT
+  RECOVERY_NOTE
+  PROVIDER_NOTE
+  RECOMMENDATION
+  ACTION_OUTCOME
+  ONBOARDING_DATA
+  CUSTOM
+}
+
+enum InstructionCategory {
+  SYSTEM_PROMPT
+  RECOVERY_GUIDANCE
+  SAFETY_RULE
+  PERSONA_DIRECTIVE
+  TOPIC_BOUNDARY
+  ORCHESTRATION_CONTROL
+  CUSTOM
+}
+
+enum InstructionStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum ModerationFlagType {
+  PROMPT_INJECTION
+  MEDICAL_DIAGNOSIS
+  SAFETY_CONCERN
+  CONTENT_POLICY
+  USER_REPORT
+}
+
+enum ModerationStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  ESCALATED
+}
+
+enum RecoveryCategory {
+  SURGICAL
+  INJURY
+  CHRONIC
+  MENTAL_HEALTH
+  WELLNESS
+  OTHER
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  USER
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id     String   @id @default(uuid()) @db.Uuid
+  authId String   @unique @map("auth_id")
+  email  String   @unique
+  role   UserRole @default(USER)
+
+  displayName String?  @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+
+  onboardingStatus OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
+
+  /// Flexible JSON for lightweight preferences (theme, notifications, units)
+  preferences Json @default("{}")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile       UserProfile?
+  conversations Conversation[]
+  messages      Message[]
+  memoryEntries MemoryEntry[]
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  USER PROFILE — structured personalization & recovery context
+// ═══════════════════════════════════════════════════════════════
+
+model UserProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ── Identity ────────────────────────────────────────────────
+  firstName  String?  @map("first_name")
+  lastName   String?  @map("last_name")
+  phone      String?
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+  timezone   String?
+
+  // ── Wellness & Recovery ─────────────────────────────────────
+  physicianPractice String?          @map("physician_practice")
+  wellnessGoal      String?          @map("wellness_goal")
+  recoveryCategory  RecoveryCategory? @map("recovery_category")
+  activeProtocol    String?          @map("active_protocol")
+
+  /// Comma-separated or JSON array for structured querying
+  restrictionsAllergies String? @map("restrictions_allergies")
+  productPreferences    String? @map("product_preferences")
+
+  // ── AI-relevant context ─────────────────────────────────────
+  /// Free-form important notes for AI context injection
+  importantNotes      String? @map("important_notes") @db.Text
+  /// Auto-maintained rolling conversation summary for Private Brain
+  conversationSummary String? @map("conversation_summary") @db.Text
+
+  // ── Structured preferences ──────────────────────────────────
+  /// JSON for extensible profile data (communication style, language, etc.)
+  extendedData Json @default("{}") @map("extended_data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_profiles")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONVERSATIONS
+// ═══════════════════════════════════════════════════════════════
+
+model Conversation {
+  id     String             @id @default(uuid()) @db.Uuid
+  userId String             @map("user_id") @db.Uuid
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title  String?
+  status ConversationStatus @default(ACTIVE)
+
+  /// AI model used for this conversation (e.g. "gpt-4o")
+  model String?
+
+  /// Conversation-level metadata (topic tags, recovery context, orchestration source)
+  metadata Json @default("{}")
+
+  /// Cached summary for Private Brain / long-context management
+  summary String? @db.Text
+
+  messageCount  Int       @default(0) @map("message_count")
+  lastMessageAt DateTime? @map("last_message_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages Message[]
+
+  @@index([userId, status])
+  @@index([userId, updatedAt])
+  @@map("conversations")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MESSAGES
+// ═══════════════════════════════════════════════════════════════
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String?      @map("user_id") @db.Uuid
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  role    MessageRole
+  status  MessageStatus @default(COMPLETED)
+  content String        @db.Text
+
+  /// Token counts for usage tracking and context window management
+  tokenCount Int? @map("token_count")
+
+  /// Structured AI metadata (tool calls, citations, safety flags, latency)
+  metadata Json @default("{}")
+
+  /// User feedback on assistant messages
+  feedbackRating  String? @map("feedback_rating")
+  feedbackComment String? @map("feedback_comment") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@index([userId, createdAt])
+  @@map("messages")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ADMIN INSTRUCTIONS — admin-controlled AI behavior
+// ═══════════════════════════════════════════════════════════════
+
+model AdminInstruction {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Short identifier for reference (e.g. "recovery-surgical-guidance")
+  slug String @unique
+
+  title       String
+  description String? @db.Text
+
+  category InstructionCategory
+  status   InstructionStatus   @default(DRAFT)
+
+  /// The actual instruction content injected into AI prompts
+  content String @db.Text
+
+  /// Execution priority — lower numbers run first when multiple instructions match
+  priority Int @default(100)
+
+  /// Targeting: which user segments or contexts this instruction applies to
+  /// e.g. {"recoveryCategory": "SURGICAL", "onboardingStatus": "COMPLETED"}
+  targeting Json @default("{}")
+
+  /// Who created or last modified this instruction
+  createdBy String  @map("created_by")
+  updatedBy String? @map("updated_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  versions InstructionVersion[]
+
+  @@index([category, status])
+  @@index([status, priority])
+  @@map("admin_instructions")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INSTRUCTION VERSIONS — rollback & audit trail
+// ═══════════════════════════════════════════════════════════════
+
+model InstructionVersion {
+  id            String           @id @default(uuid()) @db.Uuid
+  instructionId String           @map("instruction_id") @db.Uuid
+  instruction   AdminInstruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+
+  /// Incrementing version number scoped to the parent instruction
+  version Int
+
+  /// Snapshot of the instruction content at this version
+  content   String @db.Text
+  title     String
+  category  InstructionCategory
+  targeting Json   @default("{}")
+
+  /// What changed — human-readable description
+  changeNote String? @map("change_note") @db.Text
+
+  /// Who made this change
+  createdBy String @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([instructionId, version])
+  @@index([instructionId, createdAt])
+  @@map("instruction_versions")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MEMORY (Private Brain) — structured longitudinal memory
+// ═══════════════════════════════════════════════════════════════
+
+model MemoryEntry {
+  id     String          @id @default(uuid()) @db.Uuid
+  userId String          @map("user_id") @db.Uuid
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    MemoryEntryType
+  content String          @db.Text
+
+  /// What created this memory
+  sourceType String?  @map("source_type")
+  sourceId   String?  @map("source_id") @db.Uuid
+
+  /// Structured metadata (topics, sentiment, intent, conversation title)
+  metadata Json @default("{}")
+
+  /// Importance score (0.0–1.0) for retrieval ranking
+  importance Float @default(0.5)
+
+  /// Confidence score (0.0–1.0) — how reliable is this memory
+  confidence Float @default(0.7)
+
+  /// Category tag for filtering (e.g. "medication", "symptom", "goal")
+  category String?
+
+  /// Keywords extracted for fast keyword retrieval
+  keywords String[] @default([])
+
+  /// Soft-expiry: memories decay over time but are never hard-deleted
+  isActive  Boolean   @default(true) @map("is_active")
+  expiresAt DateTime? @map("expires_at")
+
+  /// How many times this memory has been retrieved for AI context
+  accessCount Int      @default(0) @map("access_count")
+  lastAccessedAt DateTime? @map("last_accessed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  embedding MemoryEmbedding?
+
+  @@index([userId, type])
+  @@index([userId, isActive, importance])
+  @@index([userId, category])
+  @@index([userId, sourceType, sourceId])
+  @@map("memory_entries")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MEMORY EMBEDDINGS — pgvector-ready semantic retrieval
+// ═══════════════════════════════════════════════════════════════
 //
-// Models will be added as features are implemented.
+//  The `vector` column is typed as String for now. When pgvector
+//  is enabled, migrate this to:
+//    vector Unsupported("vector(1536)")
+//  and add a HNSW or IVFFlat index via raw SQL migration:
+//    CREATE INDEX ON memory_embeddings USING hnsw (vector vector_cosine_ops);
+//
+//  Kept as a separate table so:
+//    - MemoryEntry queries stay fast (no large vector column)
+//    - Embedding model can be swapped without touching entries
+//    - Entries without embeddings are valid (embedding is optional)
+
+model MemoryEmbedding {
+  id            String      @id @default(uuid()) @db.Uuid
+  memoryEntryId String      @unique @map("memory_entry_id") @db.Uuid
+  memoryEntry   MemoryEntry @relation(fields: [memoryEntryId], references: [id], onDelete: Cascade)
+
+  /// Serialized float array — will become vector(1536) with pgvector
+  vector String @db.Text
+
+  /// Model that generated the embedding (for cache invalidation on model change)
+  model String
+
+  /// Dimensionality of the vector
+  dimensions Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("memory_embeddings")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AUDIT LOGS — append-only operational trail
+// ═══════════════════════════════════════════════════════════════
+//
+//  Records are immutable — never updated or deleted in normal operation.
+//  Retention policies (archival, purging) are handled by scheduled jobs.
+
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// High-level domain: auth, user, conversation, ai, action, memory, admin, moderation, system
+  category String
+
+  /// Specific action (e.g. "auth.login", "ai.guardrail_blocked")
+  action String
+
+  /// Actor who triggered the event
+  actorType  String  @map("actor_type")
+  actorId    String  @map("actor_id")
+  actorLabel String? @map("actor_label")
+
+  /// Target of the event
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id")
+  targetLabel String? @map("target_label")
+
+  /// Operation outcome
+  outcome String @default("success")
+
+  /// Structured details (action-specific context, never contains secrets)
+  details Json @default("{}")
+
+  /// HTTP request correlation ID
+  requestId String? @map("request_id")
+
+  /// Client metadata
+  ip        String?
+  userAgent String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([category, createdAt])
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+  @@index([requestId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FLAGGED INTERACTIONS — moderation queue
+// ═══════════════════════════════════════════════════════════════
+
+model FlaggedInteraction {
+  id             String             @id @default(uuid()) @db.Uuid
+  userId         String             @map("user_id") @db.Uuid
+  conversationId String             @map("conversation_id") @db.Uuid
+  messageId      String             @map("message_id") @db.Uuid
+
+  flagType ModerationFlagType @map("flag_type")
+  reason   String             @db.Text
+  content  String             @db.Text
+
+  status     ModerationStatus @default(PENDING)
+  reviewedBy String?          @map("reviewed_by")
+  reviewedAt DateTime?        @map("reviewed_at")
+  reviewNote String?          @map("review_note") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([flagType, status])
+  @@map("flagged_interactions")
+}

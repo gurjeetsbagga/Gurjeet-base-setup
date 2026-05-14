@@ -8,7 +8,9 @@
  *
  * Keep integration clients thin — they wrap an external SDK
  * or HTTP call and expose a typed interface consumed by modules.
+ *
+ * Configuration for each integration lives in config/configs/
+ * and is injected via NestJS ConfigModule (registerAs pattern).
  */
 
-export { SupabaseModule, SupabaseService, supabaseConfig } from "./supabase";
-export type { SupabaseConfig } from "./supabase";
+export { SupabaseModule, SupabaseService } from "./supabase";

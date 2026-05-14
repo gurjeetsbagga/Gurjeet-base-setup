@@ -12,11 +12,21 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ --max-warnings 0",
     "lint:fix": "eslint src/ --fix",
-    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:reset": "prisma migrate reset",
     "prisma:push": "prisma db push",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:reset": "prisma migrate reset && tsx prisma/seed.ts",
     "prisma:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@auryn/types": "workspace:*",
@@ -25,22 +35,33 @@
     "@nestjs/config": "^4",
     "@nestjs/core": "^11",
     "@nestjs/platform-express": "^11",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^6",
     "@supabase/supabase-js": "^2.105.4",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "reflect-metadata": "^0.2",
-    "rxjs": "^7"
+    "rxjs": "^7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@auryn/config": "workspace:*",
     "@eslint/js": "^9",
     "@nestjs/cli": "^11",
     "@nestjs/schematics": "^11",
+    "@nestjs/testing": "^11.1.20",
+    "@swc/core": "^1.15.33",
     "@types/express": "^5",
     "@types/node": "^22",
+    "@types/supertest": "^7.2.0",
     "eslint": "^9",
     "eslint-config-prettier": "^10",
     "prisma": "^6",
+    "tsx": "^4",
+    "supertest": "^7.2.2",
     "typescript": "^5",
-    "typescript-eslint": "^8"
+    "typescript-eslint": "^8",
+    "unplugin-swc": "^1.5.9",
+    "vitest": "^4.1.6"
   }
 }
