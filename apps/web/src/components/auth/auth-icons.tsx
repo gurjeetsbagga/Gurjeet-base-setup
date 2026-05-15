@@ -2,6 +2,48 @@ import type { SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement>;
 
+/** Pulse line mark in header (Figma split login) */
+export function PhysicianOsLogoIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden {...props}>
+      <path
+        d="M4 16h4l2-7 4 14 2-7h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** EKG-style mark in circle (legacy / compact) */
+export function PhysicianOsMarkIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" aria-hidden {...props}>
+      <circle cx="18" cy="18" r="18" className="fill-auth-brand-muted" />
+      <path
+        d="M8 18h3l1.5-5.5 3 11 1.5-5.5h3"
+        className="stroke-auth-brand"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function StarBadgeIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden {...props}>
+      <path
+        d="M8 1.5 9.55 5.45 13.5 5.45 10.25 8.1 11.55 12.5 8 10.2 4.45 12.5 5.75 8.1 2.5 5.45 6.45 5.45 8 1.5Z"
+        className="fill-auth-brand"
+      />
+    </svg>
+  );
+}
+
 export function AurynMarkIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 40 40" fill="none" aria-hidden {...props}>

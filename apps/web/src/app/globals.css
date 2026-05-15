@@ -90,11 +90,14 @@
   --width-chat: 56rem;
   --spacing-section: 2rem;
 
-  /* Auth screens (Figma-aligned wellness green) */
+  /* Auth screens (Figma split login) */
   --color-auth-canvas: #eef7f2;
-  --color-auth-brand: #1e5631;
+  --color-auth-panel: #f0f4f1;
+  --color-auth-brand: #4f6b5a;
+  --color-auth-brand-muted: #e8f0eb;
+  --color-auth-brand-soft: color-mix(in srgb, var(--color-auth-brand) 70%, transparent);
   --color-auth-brand-foreground: #ffffff;
-  --color-auth-input: #f0f4f3;
+  --color-auth-input: #f4f6f5;
 
   /* Dashboard (health view) */
   --color-dashboard-brand: #1e5631;
@@ -177,4 +180,8 @@ body {
     color-mix(in srgb, var(--color-accent) 35%, transparent) 0%,
     transparent 55%
   );
+}
+
+.auth-panel {
+  background-color: var(--color-auth-panel);
 }

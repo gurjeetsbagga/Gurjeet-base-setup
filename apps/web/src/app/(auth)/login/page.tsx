@@ -14,7 +14,7 @@ export default function LoginPage() {
       onSubmit={async (data) => {
         try {
           await login(data);
-          router.push("/chat");
+          router.push("/dashboard");
         } catch (err) {
           if (err instanceof ApiClientError) throw err;
           throw new Error("Unable to sign in. Please check your credentials.");

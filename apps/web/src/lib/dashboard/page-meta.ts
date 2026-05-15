@@ -9,6 +9,7 @@ const PAGE_META: Record<string, DashboardPageMeta> = {
   "/private-brain": { breadcrumb: "WEB VIEW 01 / PRIVATE BRAIN" },
   "/recovery": { breadcrumb: "WEB VIEW 04 / PHYSICIANOS RECOVERY" },
   "/plan": { breadcrumb: "WEB VIEW 07 / EXPLORE AND PERSONALIZE" },
+  "/settings": { breadcrumb: "WEB VIEW 08 / PROFILE & SETTINGS" },
 };
 
 export function getDashboardPageMeta(pathname: string): DashboardPageMeta {

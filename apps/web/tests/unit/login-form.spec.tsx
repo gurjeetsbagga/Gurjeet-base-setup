@@ -4,12 +4,16 @@ import { LoginForm } from "@/components/auth/login-form";
 import { render, screen } from "../helpers/render";
 
 describe("LoginForm", () => {
-  it("renders Figma-aligned login UI", () => {
+  it("renders split-screen Figma-aligned login UI", () => {
     render(<LoginForm onSubmit={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: /log in to your account/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/enter your email/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /sign up here/i })).toHaveAttribute("href", "/signup");
+    expect(screen.getByRole("heading", { name: /welcome back/i })).toBeInTheDocument();
+    expect(screen.getByText(/sign in to continue your recovery journey/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/auryn@example.com/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /request access/i })).toHaveAttribute(
+      "href",
+      "/signup",
+    );
   });
 
   it("submits with valid credentials", async () => {
@@ -17,9 +21,9 @@ describe("LoginForm", () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<LoginForm onSubmit={onSubmit} />);
 
-    await user.type(screen.getByPlaceholderText(/enter your email/i), "user@auryn.dev");
-    await user.type(screen.getByPlaceholderText(/enter your password/i), "password123");
-    await user.click(screen.getByRole("button", { name: /^log in$/i }));
+    await user.type(screen.getByPlaceholderText(/auryn@example.com/i), "user@auryn.dev");
+    await user.type(screen.getByPlaceholderText(/••••••••/i), "password123");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(onSubmit).toHaveBeenCalledWith({
       email: "user@auryn.dev",
@@ -32,9 +36,9 @@ describe("LoginForm", () => {
     const onSubmit = vi.fn();
     render(<LoginForm onSubmit={onSubmit} />);
 
-    await user.type(screen.getByPlaceholderText(/enter your email/i), "user@auryn.dev");
-    await user.type(screen.getByPlaceholderText(/enter your password/i), "short");
-    await user.click(screen.getByRole("button", { name: /^log in$/i }));
+    await user.type(screen.getByPlaceholderText(/auryn@example.com/i), "user@auryn.dev");
+    await user.type(screen.getByPlaceholderText(/••••••••/i), "short");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(/8 characters/i);

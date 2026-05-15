@@ -48,7 +48,9 @@ export function DashboardSidebar({
                       ? pathname.startsWith("/recovery")
                       : item.id === "plan"
                         ? pathname.startsWith("/plan")
-                        : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                        : item.id === "settings"
+                          ? pathname.startsWith("/settings")
+                          : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <li key={item.id}>

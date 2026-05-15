@@ -1,5 +1,5 @@
-import { AuthPageShell } from "@/components/auth/auth-page-shell";
+import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return <AuthPageShell>{children}</AuthPageShell>;
+  return <AuthSplitLayout>{children}</AuthSplitLayout>;
 }
