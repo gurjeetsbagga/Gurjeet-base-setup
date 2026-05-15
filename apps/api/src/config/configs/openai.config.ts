@@ -9,6 +9,12 @@ const schema = z.object({
   maxTokens: z.number().int().positive(),
   temperature: z.number().min(0).max(2),
   enabled: z.boolean(),
+  /** Request timeout for completion calls (ms) */
+  timeoutMs: z.number().int().positive(),
+  /** Stream idle timeout — max time without a chunk (ms) */
+  streamTimeoutMs: z.number().int().positive(),
+  maxRetries: z.number().int().min(0).max(5),
+  retryBaseDelayMs: z.number().int().positive(),
 });
 
 export type OpenAIConfig = z.infer<typeof schema>;
@@ -24,6 +30,10 @@ export const openaiConfig = registerAs("openai", (): OpenAIConfig => {
     maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? "4096", 10),
     temperature: parseFloat(process.env.OPENAI_TEMPERATURE ?? "0.7"),
     enabled: Boolean(apiKey),
+    timeoutMs: parseInt(process.env.OPENAI_TIMEOUT_MS ?? "60000", 10),
+    streamTimeoutMs: parseInt(process.env.OPENAI_STREAM_TIMEOUT_MS ?? "120000", 10),
+    maxRetries: parseInt(process.env.OPENAI_MAX_RETRIES ?? "3", 10),
+    retryBaseDelayMs: parseInt(process.env.OPENAI_RETRY_BASE_DELAY_MS ?? "500", 10),
   });
 
   return Object.defineProperty(config, "toJSON", {

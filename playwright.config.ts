@@ -4,7 +4,12 @@ const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
 const apiURL = process.env.API_URL ?? "http://localhost:4000";
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: ".",
+  testMatch: [
+    "apps/web/tests/e2e/**/*.spec.ts",
+    "apps/api/tests/e2e/**/*.spec.ts",
+    "e2e/**/*.spec.ts",
+  ],
   outputDir: "./e2e/results",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

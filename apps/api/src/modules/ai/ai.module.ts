@@ -5,22 +5,22 @@ import { AI_PROVIDER } from "./providers/ai-provider.interface";
 import { OpenAiProvider } from "./providers/openai.provider";
 import { StubAiProvider } from "./providers/stub.provider";
 import { AiGuardrailsService } from "./guardrails/ai-guardrails.service";
+import { PromptAssemblerService } from "./prompts/prompt-assembler.service";
+import { AiResponseValidatorService } from "./validation/ai-response-validator.service";
 import type { OpenAIConfig } from "../../config";
 
 /**
- * AI module — provides the AI orchestration pipeline.
+ * AI module — secure orchestration boundary.
  *
- * Provider selection:
- *   - If OPENAI_API_KEY is set → OpenAiProvider (scaffold, not calling OpenAI yet)
- *   - Otherwise → StubAiProvider (deterministic dev responses)
- *
- * Exports AiService for use by ConversationsModule and other consumers.
- * No controller — client-facing AI interaction goes through ConversationsController.
+ * Provider: OpenAI when OPENAI_API_KEY is set, otherwise StubAiProvider (dev/demo).
+ * All client-facing AI traffic goes through ConversationsModule → AiService.
  */
 @Module({
   providers: [
     AiService,
     AiGuardrailsService,
+    PromptAssemblerService,
+    AiResponseValidatorService,
     OpenAiProvider,
     StubAiProvider,
     {
@@ -32,6 +32,6 @@ import type { OpenAIConfig } from "../../config";
       inject: [ConfigService, OpenAiProvider, StubAiProvider],
     },
   ],
-  exports: [AiService, AiGuardrailsService],
+  exports: [AiService, AiGuardrailsService, PromptAssemblerService, AiResponseValidatorService],
 })
 export class AiModule {}

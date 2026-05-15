@@ -119,6 +119,9 @@ model User {
   displayName String?  @map("display_name")
   avatarUrl   String?  @map("avatar_url")
 
+  /// Local dev credentials (null when using Supabase Auth)
+  passwordHash String? @map("password_hash")
+
   onboardingStatus OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
 
   /// Flexible JSON for lightweight preferences (theme, notifications, units)

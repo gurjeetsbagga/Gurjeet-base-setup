@@ -2,9 +2,11 @@ import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { LocalTokenService } from "./services/local-token.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { PermissionsGuard, ResourceOwnerGuard } from "../../common/authorization";
+import { UsersModule } from "../users/users.module";
 
 /**
  * Authentication & authorization module.
@@ -20,9 +22,11 @@ import { PermissionsGuard, ResourceOwnerGuard } from "../../common/authorization
  * one that blocks by default (unless @Public() is applied).
  */
 @Module({
+  imports: [UsersModule],
   controllers: [AuthController],
   providers: [
     AuthService,
+    LocalTokenService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

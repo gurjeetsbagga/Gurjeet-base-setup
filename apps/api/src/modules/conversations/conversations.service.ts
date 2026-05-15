@@ -1,12 +1,20 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { normalizePagination, paginatedResponse } from "../../shared/pagination";
 import { AiService } from "../ai/ai.service";
+import { MemoryService } from "../memory/memory.service";
 import type { CreateConversationDto } from "./dto/create-conversation.dto";
 import type { SendMessageDto } from "./dto/send-message.dto";
 import type { QueryConversationsDto } from "./dto/query-conversations.dto";
 import type { MessageFeedbackDto } from "./dto/message-feedback.dto";
+import { PromptContextBuilder } from "./prompt-context.builder";
 import type {
   ConversationView,
   ConversationMetadata,
@@ -15,6 +23,13 @@ import type {
   AiMessage,
 } from "./interfaces";
 
+export interface StreamMessageEvent {
+  type: "chunk" | "done" | "error";
+  delta?: string;
+  message?: MessageView;
+  error?: string;
+}
+
 @Injectable()
 export class ConversationsService {
   private readonly logger = new Logger(ConversationsService.name);
@@ -22,9 +37,9 @@ export class ConversationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ai: AiService,
+    private readonly promptContext: PromptContextBuilder,
+    private readonly memory: MemoryService,
   ) {}
-
-  // ── Conversation CRUD ────────────────────────────────────
 
   async create(userId: string, dto: CreateConversationDto): Promise<ConversationView> {
     const metadata: ConversationMetadata = {};
@@ -42,9 +57,7 @@ export class ConversationsService {
     this.logger.log(`Conversation created: ${conversation.id} by user ${userId}`);
 
     if (dto.initialMessage) {
-      await this.sendMessage(userId, conversation.id, {
-        message: dto.initialMessage,
-      });
+      await this.sendMessage(userId, conversation.id, { message: dto.initialMessage });
     }
 
     return this.toConversationView(
@@ -108,22 +121,18 @@ export class ConversationsService {
     this.logger.log(`Conversation archived: ${conversationId}`);
   }
 
-  // ── Message operations ───────────────────────────────────
-
   /**
-   * Core orchestration flow:
-   *   1. Persist the user message
-   *   2. Load conversation history (trimmed for context window)
-   *   3. Call AiService boundary for completion
-   *   4. Persist the assistant response
-   *   5. Update conversation metadata
-   *   6. Return the assistant message
+   * Synchronous orchestration: persist user message → AI → persist assistant message.
    */
   async sendMessage(
     userId: string,
     conversationId: string,
     dto: SendMessageDto,
   ): Promise<MessageView> {
+    if (dto.stream) {
+      throw new BadRequestException("Use stream=true on POST messages for SSE responses");
+    }
+
     await this.ensureOwnership(userId, conversationId);
 
     await this.prisma.message.create({
@@ -137,33 +146,116 @@ export class ConversationsService {
     });
 
     const history = await this.loadHistory(conversationId);
-
-    const aiResponse = await this.ai.complete({
-      messages: history,
-      userId,
-      conversationId,
+    const promptCtx = await this.promptContext.build(userId, dto.message, {
+      recoveryContext: dto.context,
     });
 
-    const assistantMessage = await this.prisma.message.create({
+    const aiResponse = await this.ai.complete(
+      {
+        messages: history,
+        userId,
+        conversationId,
+        model: undefined,
+      },
+      promptCtx,
+    );
+
+    const assistantMessage = await this.persistAssistantMessage(
+      conversationId,
+      aiResponse.content,
+      aiResponse.tokenCount.total,
+      aiResponse.metadata as MessageMetadata,
+    );
+
+    await this.afterAssistantResponse(userId, conversationId, dto.message, aiResponse.content);
+
+    return this.toMessageView(assistantMessage);
+  }
+
+  /**
+   * Streaming orchestration — yields SSE-compatible events.
+   */
+  async *streamMessage(
+    userId: string,
+    conversationId: string,
+    dto: SendMessageDto,
+  ): AsyncGenerator<StreamMessageEvent> {
+    await this.ensureOwnership(userId, conversationId);
+
+    await this.prisma.message.create({
+      data: {
+        conversationId,
+        userId,
+        role: "USER",
+        status: "COMPLETED",
+        content: dto.message,
+      },
+    });
+
+    const history = await this.loadHistory(conversationId);
+    const promptCtx = await this.promptContext.build(userId, dto.message, {
+      recoveryContext: dto.context,
+    });
+
+    const assistantRow = await this.prisma.message.create({
       data: {
         conversationId,
         role: "ASSISTANT",
-        status: "COMPLETED",
-        content: aiResponse.content,
-        tokenCount: aiResponse.tokenCount.total,
-        metadata: aiResponse.metadata as Prisma.InputJsonValue,
+        status: "STREAMING",
+        content: "",
       },
     });
 
-    await this.prisma.conversation.update({
-      where: { id: conversationId },
-      data: {
-        messageCount: { increment: 2 },
-        lastMessageAt: new Date(),
-      },
-    });
+    let assembled = "";
 
-    return this.toMessageView(assistantMessage);
+    try {
+      for await (const chunk of this.ai.stream(
+        { messages: history, userId, conversationId },
+        promptCtx,
+      )) {
+        if (!chunk.done) {
+          assembled += chunk.delta;
+          yield { type: "chunk", delta: chunk.delta };
+        } else {
+          if (chunk.delta) assembled += chunk.delta;
+
+          const updated = await this.prisma.message.update({
+            where: { id: assistantRow.id },
+            data: {
+              content: assembled,
+              status: "COMPLETED",
+              tokenCount: chunk.usage?.total ?? null,
+              metadata: {
+                model: this.ai.providerName,
+                finishReason: chunk.finishReason,
+              } as Prisma.InputJsonValue,
+            },
+          });
+
+          await this.prisma.conversation.update({
+            where: { id: conversationId },
+            data: {
+              messageCount: { increment: 2 },
+              lastMessageAt: new Date(),
+            },
+          });
+
+          await this.afterAssistantResponse(userId, conversationId, dto.message, assembled);
+
+          yield {
+            type: "done",
+            message: this.toMessageView(updated),
+          };
+        }
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Stream failed";
+      await this.prisma.message.update({
+        where: { id: assistantRow.id },
+        data: { status: "FAILED", content: assembled || message },
+      });
+      yield { type: "error", error: message };
+    }
   }
 
   async getMessages(userId: string, conversationId: string): Promise<MessageView[]> {
@@ -204,16 +296,57 @@ export class ConversationsService {
         feedbackComment: dto.comment,
       },
     });
-
-    this.logger.log(`Feedback submitted for message ${messageId}: ${dto.rating}`);
   }
 
-  // ── Helpers ──────────────────────────────────────────────
+  /** Prepare memory extraction — stores a conversation note for future semantic indexing */
+  private async afterAssistantResponse(
+    userId: string,
+    conversationId: string,
+    userMessage: string,
+    assistantContent: string,
+  ): Promise<void> {
+    try {
+      await this.memory.store(userId, {
+        type: "CONVERSATION_SUMMARY",
+        content: `User: ${truncate(userMessage, 200)}\nAssistant: ${truncate(assistantContent, 400)}`,
+        sourceType: "conversation",
+        sourceId: conversationId,
+        metadata: { conversationId },
+        importance: 0.4,
+      });
+    } catch {
+      /* non-blocking */
+    }
+  }
 
-  /**
-   * Load conversation history formatted for the AI boundary.
-   * Limits to most recent messages to respect context window.
-   */
+  private async persistAssistantMessage(
+    conversationId: string,
+    content: string,
+    tokenCount: number,
+    metadata: MessageMetadata,
+  ) {
+    const assistantMessage = await this.prisma.message.create({
+      data: {
+        conversationId,
+        role: "ASSISTANT",
+        status: "COMPLETED",
+        content,
+        tokenCount,
+        metadata: metadata as Prisma.InputJsonValue,
+      },
+    });
+
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        messageCount: { increment: 2 },
+        lastMessageAt: new Date(),
+      },
+    });
+
+    return assistantMessage;
+  }
+
   private async loadHistory(conversationId: string, limit = 50): Promise<AiMessage[]> {
     const messages = await this.prisma.message.findMany({
       where: { conversationId, status: "COMPLETED" },
@@ -284,4 +417,8 @@ export class ConversationsService {
       createdAt: row.createdAt,
     };
   }
+}
+
+function truncate(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max)}…`;
 }

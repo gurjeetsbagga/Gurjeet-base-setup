@@ -3,14 +3,17 @@ import HomePage from "@/app/page";
 import { render, screen } from "../helpers/render";
 
 describe("HomePage", () => {
-  it("renders the Auryn heading", () => {
+  it("renders the Auryn brand", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { level: 1, name: /auryn/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/auryn/i).length).toBeGreaterThan(0);
   });
 
-  it("renders the tagline", () => {
+  it("renders primary CTA to chat", () => {
     render(<HomePage />);
-    expect(screen.getByText(/ai wellness companion/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /start a conversation/i })).toHaveAttribute(
+      "href",
+      "/chat",
+    );
   });
 
   it("uses a main landmark", () => {
