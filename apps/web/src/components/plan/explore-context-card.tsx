@@ -10,6 +10,7 @@ export function ExploreContextCard({
 }: {
   item: ExploreContextItem;
   onSelect?: (item: ExploreContextItem) => void;
+  className?: string;
 }) {
   const content = (
     <>

@@ -1,3 +1,5 @@
+"use client";
+
 import type { ExploreQuickAction } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
