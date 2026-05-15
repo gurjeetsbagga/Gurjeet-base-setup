@@ -9,7 +9,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { Throttle } from "@nestjs/throttler";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { IdParamDto } from "../../common/dto";
@@ -21,22 +23,10 @@ import { SendMessageDto } from "./dto/send-message.dto";
 import { QueryConversationsDto } from "./dto/query-conversations.dto";
 import { MessageFeedbackDto } from "./dto/message-feedback.dto";
 
-/**
- * Conversation endpoints — versioned under /api/v1/conversations.
- *
- * Orchestration flow:
- *   Client → Controller → ConversationsService → AiService → (AI provider)
- *
- * The controller is a thin HTTP adapter. All business logic and
- * orchestration lives in ConversationsService.
- */
 @Controller("conversations")
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
-  /**
-   * POST /conversations — start a new conversation.
-   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@CurrentUser("id") userId: string, @Body() dto: CreateConversationDto) {
@@ -44,67 +34,59 @@ export class ConversationsController {
     return successResponse(conversation);
   }
 
-  /**
-   * GET /conversations — list user's conversations (paginated).
-   */
   @Get()
   async findAll(@CurrentUser("id") userId: string, @Query() query: QueryConversationsDto) {
     const result = await this.conversationsService.findMany(userId, query);
     return paginatedSuccessResponse(result.data, result.total, result.page, result.pageSize);
   }
 
-  /**
-   * GET /conversations/:id — conversation details.
-   */
   @Get(":id")
   async findOne(@CurrentUser("id") userId: string, @Param() { id }: IdParamDto) {
     const conversation = await this.conversationsService.findById(userId, id);
     return successResponse(conversation);
   }
 
-  /**
-   * DELETE /conversations/:id — archive a conversation.
-   */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@CurrentUser("id") userId: string, @Param() { id }: IdParamDto) {
     await this.conversationsService.archive(userId, id);
   }
 
-  // ── Messages ─────────────────────────────────────────────
-
-  /**
-   * POST /conversations/:id/messages — send a message and get AI response.
-   *
-   * Rate-limited under the "ai" tier (stricter than global) because
-   * each request triggers an AI completion with token costs.
-   *
-   * When `stream: true` is passed, this endpoint will eventually
-   * return a text/event-stream response. For now it returns JSON.
-   */
   @Throttle({ [THROTTLE_AI]: {} })
   @Post(":id/messages")
   async sendMessage(
     @CurrentUser("id") userId: string,
     @Param() { id }: IdParamDto,
     @Body() dto: SendMessageDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
+    if (dto.stream) {
+      res.status(200);
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      const flushable = res as Response & { flush?: () => void };
+      for await (const event of this.conversationsService.streamMessage(userId, id, dto)) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+        flushable.flush?.();
+      }
+      res.write("data: [DONE]\n\n");
+      res.end();
+      return;
+    }
+
     const message = await this.conversationsService.sendMessage(userId, id, dto);
     return successResponse(message);
   }
 
-  /**
-   * GET /conversations/:id/messages — full message history.
-   */
   @Get(":id/messages")
   async getMessages(@CurrentUser("id") userId: string, @Param() { id }: IdParamDto) {
     const messages = await this.conversationsService.getMessages(userId, id);
     return successResponse(messages);
   }
 
-  /**
-   * PATCH /conversations/:id/messages/:messageId/feedback — rate an AI response.
-   */
   @Patch(":id/messages/:messageId/feedback")
   @HttpCode(HttpStatus.NO_CONTENT)
   async submitFeedback(

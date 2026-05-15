@@ -16,3 +16,10 @@ export type {
 } from "./ai-output.schemas";
 export { validateAiOutput, parseAiJson } from "./validate-ai-output";
 export type { AiOutputValidationResult } from "./validate-ai-output";
+
+export {
+  aiOrchestratedResponseSchema,
+  aiActionProposalSchema,
+  aiEscalationSchema,
+} from "./orchestrated-response.schema";
+export type { AiOrchestratedResponse, AiActionProposal } from "./orchestrated-response.schema";

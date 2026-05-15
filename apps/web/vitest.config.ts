@@ -13,8 +13,7 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}", "tests/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["node_modules", ".next", "dist"],
+    exclude: ["node_modules", ".next", "dist", "tests/e2e/**"],
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
@@ -22,5 +21,21 @@ export default defineConfig({
       exclude: ["src/**/index.ts", "src/**/*.d.ts"],
     },
     css: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["tests/unit/**/*.spec.{ts,tsx}"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          include: ["tests/integration/**/*.spec.{ts,tsx}"],
+        },
+      },
+    ],
   },
 });

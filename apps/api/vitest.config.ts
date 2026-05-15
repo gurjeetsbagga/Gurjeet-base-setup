@@ -20,14 +20,28 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    root: ".",
-    include: ["src/**/*.{test,spec}.ts", "tests/**/*.{test,spec}.ts"],
-    exclude: ["node_modules", "dist"],
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
       include: ["src/**/*.ts"],
       exclude: ["src/**/index.ts", "src/**/*.d.ts", "src/main.ts"],
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["tests/unit/**/*.spec.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          include: ["tests/integration/**/*.spec.ts"],
+          testTimeout: 30_000,
+        },
+      },
+    ],
   },
 });

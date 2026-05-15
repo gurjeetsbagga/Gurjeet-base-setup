@@ -1,28 +1,16 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { ProviderMessage } from "../providers";
+import { EMERGENCY_ESCALATION_MESSAGE, PHYSICIAN_ESCALATION_MESSAGE } from "./escalation-messages";
 
 /**
  * Pre- and post-completion guardrails for AI interactions.
  *
- * Sits between the AiService orchestrator and the provider:
- *
  *   AiService → [pre-guardrails] → Provider → [post-guardrails] → response
- *
- * Responsibilities:
- *   - Block prompt injection attempts
- *   - Reject unsafe / out-of-scope requests
- *   - Sanitize AI output before it reaches the database
- *   - Flag content that needs human review
- *   - Enforce Auryn's medical safety boundaries
  */
 @Injectable()
 export class AiGuardrailsService {
   private readonly logger = new Logger(AiGuardrailsService.name);
 
-  /**
-   * Validate user input BEFORE sending to the AI provider.
-   * Returns a rejection reason if the input should be blocked.
-   */
   preValidate(
     messages: ProviderMessage[],
     context: { userId: string; requestId: string },
@@ -46,6 +34,14 @@ export class AiGuardrailsService {
       };
     }
 
+    if (containsEmergencySignals(content)) {
+      return {
+        allowed: true,
+        injectSystemNote: EMERGENCY_ESCALATION_MESSAGE,
+        warning: { code: "MEDICAL_EMERGENCY", message: "Emergency signals detected in user input" },
+      };
+    }
+
     if (containsUrgentMedicalRequest(content)) {
       return {
         allowed: true,
@@ -58,15 +54,17 @@ export class AiGuardrailsService {
       };
     }
 
+    if (requestsDiagnosis(content) || requestsPrescription(content)) {
+      return {
+        allowed: true,
+        injectSystemNote: PHYSICIAN_ESCALATION_MESSAGE,
+        warning: { code: "CLINICAL_REQUEST", message: "User requested clinical authority" },
+      };
+    }
+
     return { allowed: true };
   }
 
-  /**
-   * Validate AI output AFTER receiving from the provider,
-   * BEFORE persisting to the database or returning to the client.
-   *
-   * This is the critical enforcement point — AI output is untrusted.
-   */
   postValidate(
     content: string,
     context: { userId: string; requestId: string },
@@ -89,11 +87,20 @@ export class AiGuardrailsService {
       };
     }
 
+    if (containsBlockedTreatmentAdvice(content)) {
+      this.logger.warn(`[${context.requestId}] Blocked treatment advice in AI output`);
+      return {
+        safe: true,
+        sanitized: replaceWithPhysicianReferral(content),
+        flag: { code: "TREATMENT_BLOCKED", message: "Treatment advice sanitized" },
+      };
+    }
+
     if (containsMedicalDiagnosis(content)) {
       this.logger.warn(`[${context.requestId}] AI response contains potential medical diagnosis`);
       return {
         safe: true,
-        sanitized: appendMedicalDisclaimer(content),
+        sanitized: appendWellnessDisclaimer(content),
         flag: {
           code: "MEDICAL_CONTENT",
           message: "Response contained medical language — disclaimer appended.",
@@ -101,24 +108,32 @@ export class AiGuardrailsService {
       };
     }
 
+    if (containsMedicationOverride(content)) {
+      return {
+        safe: true,
+        sanitized: appendWellnessDisclaimer(
+          content +
+            "\n\nPlease speak with your healthcare provider before making any changes to medications.",
+        ),
+        flag: { code: "MEDICATION_SAFETY", message: "Medication override language flagged" },
+      };
+    }
+
     return { safe: true };
   }
 }
 
-// ── Types ────────────────────────────────────────────────
-
 export type PreValidationResult =
-  | { allowed: true; warning?: { code: string; message: string } }
+  | {
+      allowed: true;
+      warning?: { code: string; message: string };
+      injectSystemNote?: string;
+    }
   | { allowed: false; reason: string; code: string };
 
 export type PostValidationResult =
   | { safe: true; sanitized?: string; flag?: { code: string; message: string } }
   | { safe: false; reason: string; code: string };
-
-// ── Detection heuristics ─────────────────────────────────
-// These are intentionally conservative starting points.
-// They'll be refined with real usage patterns and potentially
-// replaced by a dedicated moderation API.
 
 function containsPromptInjection(text: string): boolean {
   const lower = text.toLowerCase();
@@ -132,45 +147,104 @@ function containsPromptInjection(text: string): boolean {
     "override your system prompt",
     "system prompt:",
     "new instructions:",
+    "jailbreak",
+    "dan mode",
   ];
   return patterns.some((p) => lower.includes(p));
+}
+
+function containsEmergencySignals(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "can't breathe",
+    "cannot breathe",
+    "heart attack",
+    "having a stroke",
+    "severe bleeding",
+    "overdose",
+    "took too many pills",
+    "want to kill myself",
+    "going to kill myself",
+    "suicide plan",
+  ].some((p) => lower.includes(p));
 }
 
 function containsUrgentMedicalRequest(text: string): boolean {
   const lower = text.toLowerCase();
-  const patterns = [
-    "overdose",
-    "can't breathe",
+  return [
     "chest pain",
-    "heart attack",
     "suicidal",
     "want to die",
     "kill myself",
-    "stroke symptoms",
-    "severe bleeding",
     "anaphylaxis",
-  ];
-  return patterns.some((p) => lower.includes(p));
+    "unconscious",
+  ].some((p) => lower.includes(p));
+}
+
+function requestsDiagnosis(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "do i have",
+    "is this cancer",
+    "diagnose me",
+    "what disease",
+    "what condition do i have",
+  ].some((p) => lower.includes(p));
+}
+
+function requestsPrescription(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "prescribe me",
+    "what medication should i take",
+    "what dose should i take",
+    "can you prescribe",
+  ].some((p) => lower.includes(p));
 }
 
 function containsMedicalDiagnosis(text: string): boolean {
   const lower = text.toLowerCase();
-  const patterns = [
+  return [
     "you have been diagnosed with",
     "your diagnosis is",
     "i diagnose you with",
     "you are suffering from",
-    "you should take the following medication",
-    "i prescribe",
-  ];
-  return patterns.some((p) => lower.includes(p));
+    "you definitely have",
+  ].some((p) => lower.includes(p));
 }
 
-function appendMedicalDisclaimer(content: string): string {
+function containsBlockedTreatmentAdvice(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "you should take",
+    "start taking",
+    "stop taking your medication",
+    "increase your dose",
+    "decrease your dose",
+  ].some((p) => lower.includes(p));
+}
+
+function containsMedicationOverride(text: string): boolean {
+  const lower = text.toLowerCase();
+  return [
+    "stop your prescription",
+    "ignore your doctor",
+    "don't need your medication",
+    "replace your medication with",
+  ].some((p) => lower.includes(p));
+}
+
+function appendWellnessDisclaimer(content: string): string {
   return (
     content +
-    "\n\n---\n*Disclaimer: This information is for educational purposes only " +
-    "and should not be considered medical advice. Please consult your " +
-    "healthcare provider for personalized medical guidance.*"
+    "\n\n*This is wellness guidance, not medical advice. Please consult your healthcare provider for personalized medical decisions.*"
+  );
+}
+
+function replaceWithPhysicianReferral(_content: string): string {
+  return (
+    "I want to support you thoughtfully, but I can't recommend specific treatments or medication changes. " +
+    "Your healthcare provider is the right person to guide those decisions.\n\n" +
+    "I'm here to help with wellness reflection, recovery support, and gentle next steps that don't replace clinical care."
   );
 }

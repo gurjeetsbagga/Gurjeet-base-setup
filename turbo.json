@@ -56,6 +56,18 @@
       "outputs": ["coverage/**"],
       "outputLogs": "new-only"
     },
+    "test:unit": {
+      "dependsOn": ["build"],
+      "env": ["DATABASE_URL"],
+      "outputs": ["coverage/**"],
+      "outputLogs": "new-only"
+    },
+    "test:integration": {
+      "dependsOn": ["build"],
+      "env": ["DATABASE_URL"],
+      "outputs": ["coverage/**"],
+      "outputLogs": "new-only"
+    },
     "test:ci": {
       "dependsOn": ["build"],
       "env": ["CI", "DATABASE_URL"],

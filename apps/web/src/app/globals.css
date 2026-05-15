@@ -1,35 +1,39 @@
 @import "tailwindcss";
 
 /*
- * Auryn design tokens — semantic color system.
- *
- * All UI surfaces reference these variables. Override per-theme
- * by swapping values inside @media (prefers-color-scheme: dark)
- * or a [data-theme="dark"] selector when dark-mode ships.
+ * Auryn design tokens — calm, premium wellness aesthetic.
+ * All UI references semantic tokens only.
  */
 
 @theme {
-  /* ── Typography ──────────────────────────────────────────── */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-
-  /* ── Colors ──────────────────────────────────────────────── */
+  --font-mono: ui-monospace, monospace;
 
   /* Brand */
   --color-primary: #4f6d7a;
   --color-primary-foreground: #ffffff;
+  --color-primary-muted: #e8eef1;
   --color-secondary: #7ba7bc;
   --color-secondary-foreground: #1a2b33;
   --color-accent: #a8d5ba;
   --color-accent-foreground: #1a2b33;
+  --color-accent-soft: #e8f4ec;
 
   /* Surfaces */
-  --color-background: #fafbfc;
+  --color-background: #f7f9fa;
   --color-foreground: #1a2b33;
   --color-surface: #ffffff;
   --color-surface-foreground: #1a2b33;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
+  --color-surface-elevated: #ffffff;
+  --color-muted: #f1f5f4;
+  --color-muted-foreground: #5c6f7a;
+
+  /* Chat */
+  --color-chat-user: #4f6d7a;
+  --color-chat-user-foreground: #ffffff;
+  --color-chat-assistant: #ffffff;
+  --color-chat-assistant-foreground: #1a2b33;
+  --color-chat-system: #f0f4f6;
 
   /* Feedback */
   --color-success: #22c55e;
@@ -39,25 +43,39 @@
   --color-error: #ef4444;
   --color-error-foreground: #ffffff;
 
-  /* Borders & misc */
-  --color-border: #e2e8f0;
+  /* Borders */
+  --color-border: #e2e8ec;
+  --color-border-subtle: #eef2f4;
   --color-ring: #4f6d7a;
-  --color-input: #e2e8f0;
+  --color-input: #e2e8ec;
 
-  /* ── Spacing scale ───────────────────────────────────────── */
+  /* Radius */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
   --radius-full: 9999px;
-}
 
-/* ── Base resets ──────────────────────────────────────────── */
+  /* Shadows */
+  --shadow-soft: 0 1px 3px rgb(26 43 51 / 0.04), 0 4px 12px rgb(26 43 51 / 0.06);
+  --shadow-card: 0 2px 8px rgb(26 43 51 / 0.06), 0 8px 24px rgb(26 43 51 / 0.04);
+  --shadow-elevated: 0 4px 16px rgb(26 43 51 / 0.08);
+
+  /* Motion */
+  --ease-calm: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+}
 
 *,
 *::before,
 *::after {
   border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -66,4 +84,39 @@ body {
   color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Subtle wellness gradient for auth/marketing surfaces */
+.auryn-gradient {
+  background: linear-gradient(
+    165deg,
+    var(--color-background) 0%,
+    var(--color-accent-soft) 45%,
+    var(--color-primary-muted) 100%
+  );
+}
+
+/* Chat scroll area */
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
 }

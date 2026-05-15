@@ -32,6 +32,8 @@ export interface MessageMetadata {
   model?: string;
   /** Processing duration in ms (orchestration latency) */
   durationMs?: number;
+  /** AI provider used for this message (e.g. openai, stub) */
+  provider?: string;
 }
 
 export interface Citation {
