@@ -1,0 +1,28 @@
+Auryn web — Vercel fix (read if install fails with pnpm-lock.yaml)
+
+Your build log must NOT show only:
+  Running "install" command: `pnpm install --frozen-lockfile`...
+
+If it does, the Vercel dashboard is overriding this repo. Fix the UI:
+
+1. vercel.com → Project → Settings → General → Build & Development Settings
+
+2. RECOMMENDED (simplest):
+   - Root Directory: DELETE "apps/web" (leave empty = repository root)
+   - Output Directory: apps/web/.next
+   - Install Command: turn OFF "Override" (empty)
+   - Build Command: turn OFF "Override" (empty)
+   - Save → Redeploy
+
+3. OR keep Root Directory = apps/web:
+   - Turn ON "Include source files outside of the Root Directory in the Build Step"
+   - Install Command override: node install-vercel.cjs
+   - Build Command override: bash scripts/vercel-build.sh
+   - Save → Redeploy
+
+4. Settings → Git → confirm Production Branch is the branch you push
+   (e.g. Gurjeet/base-setup, not main, unless main has these files).
+
+5. After redeploy, log should show either:
+   - install at repo root (many files, not ~197 only), OR
+   - Running "install" command: `node install-vercel.cjs`...
