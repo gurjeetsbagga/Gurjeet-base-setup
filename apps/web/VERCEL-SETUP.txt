@@ -7,14 +7,26 @@ If it does, the Vercel dashboard is overriding this repo. Fix the UI:
 
 1. vercel.com → Project → Settings → General → Build & Development Settings
 
-2. RECOMMENDED (simplest):
-   - Root Directory: DELETE "apps/web" (leave empty = repository root)
-   - Output Directory: apps/web/.next
-   - Install Command: turn OFF "Override" (empty)
-   - Build Command: turn OFF "Override" (empty)
+2. REQUIRED for Next.js (use this):
+   - Framework Preset: Next.js
+   - Root Directory: apps/web
+   - Include outside root: ON
+   - Install Command override: node install-vercel.cjs
+   - Build Command override: bash scripts/vercel-build.sh
+   - Output Directory override: .next
+   - Production Branch: Gurjeet/base-setup (not main)
    - Save → Redeploy
 
-3. OR keep Root Directory = apps/web:
+3. OR repository root (Framework must be Other, not Next.js):
+   - Root Directory: empty (repo root)
+   - Framework: Other
+   - Install: node apps/web/install-vercel.cjs
+   - Build: pnpm exec turbo run build --filter=@auryn/web
+   - Output: apps/web/.next
+
+4. Do NOT use Root = repo root + Framework = Next.js (causes "No Next.js version detected").
+
+5. OLD — keep Root Directory = apps/web:
    - Turn ON "Include source files outside of the Root Directory in the Build Step"
    - Install Command override: node install-vercel.cjs
    - Build Command override: bash scripts/vercel-build.sh

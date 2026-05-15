@@ -51,4 +51,8 @@ Then redeploy (Deployments → … → Redeploy).
 }
 
 console.log(`[auryn] pnpm install from monorepo root: ${root}`);
-execSync("pnpm install --frozen-lockfile", { cwd: root, stdio: "inherit" });
+execSync("pnpm install --frozen-lockfile", {
+  cwd: root,
+  stdio: "inherit",
+  env: { ...process.env, HUSKY: "0" },
+});
