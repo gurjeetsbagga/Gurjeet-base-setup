@@ -1,23 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import type { Request } from "express";
 import { Public } from "../../common/decorators/public.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { THROTTLE_AUTH } from "../../common/throttle";
+import { successResponse } from "../../shared/api-response";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { toAuthClientDto } from "./dto/auth-client.dto";
+import type { AuthUser } from "./interfaces";
 
-/**
- * Authentication endpoints — versioned under /api/v1/auth.
- *
- * Public routes are marked with @Public() so the global JwtAuthGuard
- * skips them. Protected routes require a valid Bearer token.
- *
- * All public auth routes use the "auth" throttle tier (stricter than
- * global) to prevent brute-force and credential-stuffing attacks.
- */
 @Throttle({ [THROTTLE_AUTH]: {} })
 @Controller("auth")
 export class AuthController {
@@ -26,34 +19,47 @@ export class AuthController {
   @Public()
   @Post("register")
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(@Body() dto: RegisterDto) {
+    const result = await this.authService.register(dto);
+    return successResponse(toAuthClientDto(result));
   }
 
   @Public()
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto) {
+    const result = await this.authService.login(dto);
+    return successResponse(toAuthClientDto(result));
   }
 
   @Public()
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refreshToken(dto);
+  async refresh(@Body() dto: RefreshTokenDto) {
+    const result = await this.authService.refreshToken(dto);
+    return successResponse(toAuthClientDto(result));
   }
 
   @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
-  logout(@CurrentUser("id") userId: string) {
-    return this.authService.logout(userId);
+  async logout(@CurrentUser("id") userId: string) {
+    await this.authService.logout(userId);
   }
 
   @Get("me")
-  me(@Req() req: Request) {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return null;
-    return this.authService.getCurrentUser(token);
+  me(@CurrentUser() user: AuthUser | null) {
+    if (!user) {
+      return successResponse(null);
+    }
+
+    const displayName =
+      typeof user.metadata.display_name === "string" ? user.metadata.display_name : undefined;
+
+    return successResponse({
+      id: user.id,
+      email: user.email,
+      displayName,
+      roles: user.roles,
+    });
   }
 }

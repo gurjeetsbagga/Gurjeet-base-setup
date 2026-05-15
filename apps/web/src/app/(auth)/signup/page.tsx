@@ -15,7 +15,7 @@ export default function SignupPage() {
       onSubmit={async (data) => {
         try {
           await register(data);
-          router.push("/chat");
+          router.push("/onboarding");
         } catch (err) {
           if (err instanceof ApiClientError) throw err;
           throw new Error("Unable to create account. Please try again.");

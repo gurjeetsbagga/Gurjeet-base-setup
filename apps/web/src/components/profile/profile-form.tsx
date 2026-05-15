@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UserProfile } from "@/lib/api/types";
 
@@ -96,9 +97,8 @@ export function ProfileForm({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="recoveryCategory">Recovery category</Label>
-            <select
+            <Select
               id="recoveryCategory"
-              className="flex h-11 w-full rounded-xl border border-input bg-surface px-4 text-sm"
               value={profile.recoveryCategory ?? ""}
               onChange={(e) => update("recoveryCategory", e.target.value)}
             >
@@ -107,7 +107,7 @@ export function ProfileForm({
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="activeProtocol">Active protocol</Label>

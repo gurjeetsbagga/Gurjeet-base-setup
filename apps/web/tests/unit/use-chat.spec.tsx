@@ -9,6 +9,9 @@ import {
 } from "../helpers/mock-session";
 
 vi.mock("@/lib/api/conversations");
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+}));
 
 describe("useChat", () => {
   beforeEach(() => {
@@ -60,17 +63,23 @@ describe("useChat", () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
-    vi.mocked(conversationsApi.sendMessage).mockResolvedValue({
-      id: "msg-1",
-      role: "ASSISTANT",
-      status: "COMPLETED",
-      content: "Rest when you need to.",
-      tokenCount: 10,
-      metadata: {},
-      feedbackRating: null,
-      createdAt: new Date().toISOString(),
+    vi.mocked(conversationsApi.streamMessage).mockImplementation(async function* () {
+      yield { type: "chunk" as const, delta: "Rest " };
+      yield { type: "chunk" as const, delta: "when ready." };
+      yield {
+        type: "done" as const,
+        message: {
+          id: "msg-1",
+          role: "ASSISTANT",
+          status: "COMPLETED",
+          content: "Rest when ready.",
+          tokenCount: 10,
+          metadata: {},
+          feedbackRating: null,
+          createdAt: new Date().toISOString(),
+        },
+      };
     });
-
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -82,7 +91,7 @@ describe("useChat", () => {
     });
 
     await waitFor(() => {
-      expect(conversationsApi.sendMessage).toHaveBeenCalled();
+      expect(conversationsApi.streamMessage).toHaveBeenCalled();
     });
   });
 });

@@ -13,6 +13,8 @@ vi.mock("@/lib/hooks/use-chat", () => ({
     sendMessage: vi.fn(),
     isSending: false,
     showTyping: true,
+    isLoadingHistory: false,
+    showWelcomeOnly: false,
     scrollRef: { current: null },
     activeConversationId: "conv-1",
   }),

@@ -19,7 +19,17 @@
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "NODE_ENV",
+        "API_PORT",
+        "API_HOST",
+        "API_JWT_SECRET",
+        "DATABASE_URL",
+        "NEXT_PUBLIC_*",
+        "WEB_PORT",
+        "LOG_LEVEL"
+      ]
     },
     "start:dev": {
       "dependsOn": ["^build"],
@@ -83,13 +93,32 @@
       "cache": false
     },
     "prisma:generate": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
     },
     "prisma:migrate": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
+    },
+    "prisma:migrate:deploy": {
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
+    },
+    "prisma:migrate:reset": {
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
+    },
+    "prisma:reset": {
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
+    },
+    "prisma:seed": {
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
     },
     "prisma:push": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_DIRECT_URL"]
     },
     "prisma:studio": {
       "cache": false,

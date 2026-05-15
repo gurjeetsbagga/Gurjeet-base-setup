@@ -33,8 +33,8 @@ export class UsersController {
    * GET /users/me — current authenticated user's profile.
    */
   @Get("me")
-  async getMyProfile(@CurrentUser("id") authId: string) {
-    const profile = await this.usersService.findByAuthId(authId);
+  async getMyProfile(@CurrentUser("id") userId: string) {
+    const profile = await this.usersService.findById(userId);
     return successResponse(profile);
   }
 
@@ -42,9 +42,8 @@ export class UsersController {
    * PATCH /users/me — update own profile.
    */
   @Patch("me")
-  async updateMyProfile(@CurrentUser("id") authId: string, @Body() dto: UpdateUserDto) {
-    const existing = await this.usersService.findByAuthId(authId);
-    const updated = await this.usersService.update(existing.id, dto);
+  async updateMyProfile(@CurrentUser("id") userId: string, @Body() dto: UpdateUserDto) {
+    const updated = await this.usersService.update(userId, dto);
     return successResponse(updated);
   }
 

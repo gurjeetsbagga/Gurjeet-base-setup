@@ -7,7 +7,7 @@
  * can be swapped without touching consumers.
  */
 export interface AuthUser {
-  /** Supabase user ID (UUID) */
+  /** Application user ID (Prisma `users.id`) */
   id: string;
 
   email: string;

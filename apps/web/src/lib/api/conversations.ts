@@ -1,4 +1,6 @@
 import { apiRequest, apiStreamRequest } from "./client";
+import { parseSseStream } from "./parse-sse-stream";
+import type { StreamMessageEvent } from "./stream-events";
 import type { ApiResponse, Conversation, Message, PaginatedResponse } from "./types";
 
 export async function listConversations(page = 1, pageSize = 20): Promise<Conversation[]> {
@@ -28,20 +30,28 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
 
 export async function sendMessage(
   conversationId: string,
-  content: string,
+  message: string,
   stream = false,
 ): Promise<Message> {
   const res = await apiRequest<ApiResponse<Message>>(`/conversations/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content, stream }),
+    body: JSON.stringify({ message, stream }),
   });
   return res.data;
 }
 
-/** Prepared for SSE streaming when backend supports it */
-export function sendMessageStream(conversationId: string, content: string): Promise<Response> {
+export function sendMessageStream(conversationId: string, message: string): Promise<Response> {
   return apiStreamRequest(`/conversations/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content, stream: true }),
+    body: JSON.stringify({ message, stream: true }),
   });
+}
+
+/** Consume SSE stream from POST messages with stream=true */
+export async function* streamMessage(
+  conversationId: string,
+  message: string,
+): AsyncGenerator<StreamMessageEvent> {
+  const response = await sendMessageStream(conversationId, message);
+  yield* parseSseStream<StreamMessageEvent>(response);
 }

@@ -35,9 +35,9 @@ describe("conversations API client", () => {
     expect(headers.get("Accept")).toBe("text/event-stream");
     expect(headers.get("Authorization")).toBe("Bearer test-token");
 
-    const body = JSON.parse(init.body as string) as { stream: boolean; content: string };
+    const body = JSON.parse(init.body as string) as { stream: boolean; message: string };
     expect(body.stream).toBe(true);
-    expect(body.content).toBe("Hello");
+    expect(body.message).toBe("Hello");
   });
 
   it("apiStreamRequest throws on non-ok response", async () => {

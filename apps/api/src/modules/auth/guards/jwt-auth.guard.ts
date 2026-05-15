@@ -1,24 +1,24 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { IS_PUBLIC_KEY } from "../../../common/decorators/public.decorator";
-import { SupabaseService } from "../../../integrations/supabase";
+import { AuthService } from "../auth.service";
 import type { AuthUser } from "../interfaces";
-import { UserRole } from "../interfaces";
 import type { Request } from "express";
 
 /**
  * Global-ready JWT auth guard.
  *
  * When registered as APP_GUARD, every route requires a valid
- * Supabase JWT unless explicitly marked with @Public().
+ * Bearer token unless explicitly marked with @Public().
  *
- * After validation, attaches a normalized `AuthUser` to `request.user`.
+ * After validation, attaches a normalized `AuthUser` to `request.user`
+ * using the application user id (Prisma `users.id`).
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly supabase: SupabaseService,
+    private readonly authService: AuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -29,10 +29,6 @@ export class JwtAuthGuard implements CanActivate {
 
     if (isPublic) return true;
 
-    if (!this.supabase.isEnabled) {
-      throw new UnauthorizedException("Auth service unavailable");
-    }
-
     const request = context.switchToHttp().getRequest<Request>();
     const token = extractBearerToken(request);
 
@@ -40,30 +36,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException("Missing authorization token");
     }
 
-    const userClient = this.supabase.forUser(token);
-    if (!userClient) {
-      throw new UnauthorizedException("Auth service unavailable");
-    }
-
-    const {
-      data: { user },
-      error,
-    } = await userClient.auth.getUser();
-
-    if (error || !user) {
-      throw new UnauthorizedException("Invalid or expired token");
-    }
-
-    const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
-    const rawRoles = Array.isArray(appMetadata.roles) ? appMetadata.roles : [];
-
-    const authUser: AuthUser = {
-      id: user.id,
-      email: user.email ?? "",
-      roles: rawRoles.filter((r): r is UserRole => Object.values(UserRole).includes(r as UserRole)),
-      metadata: (user.user_metadata ?? {}) as Record<string, unknown>,
-    };
-
+    const authUser = await this.authService.resolveAuthUserFromToken(token);
     (request as Request & { user: AuthUser }).user = authUser;
     return true;
   }
