@@ -89,6 +89,27 @@
   --width-content: 48rem;
   --width-chat: 56rem;
   --spacing-section: 2rem;
+
+  /* Auth screens (Figma-aligned wellness green) */
+  --color-auth-canvas: #eef7f2;
+  --color-auth-brand: #1e5631;
+  --color-auth-brand-foreground: #ffffff;
+  --color-auth-input: #f0f4f3;
+
+  /* Dashboard (health view) */
+  --color-dashboard-brand: #1e5631;
+  --color-dashboard-brand-muted: #e8f4ec;
+  --color-dashboard-canvas: #f4f7f6;
+  --width-dashboard-sidebar: 15.5rem;
+  --width-dashboard-prompt: 42rem;
+
+  /* Private Brain — memory category indicators */
+  --color-memory-goal: #769884;
+  --color-memory-health: #769884;
+  --color-memory-personal: #e87070;
+  --color-memory-research: #f4b44b;
+  --color-memory-sleep: #c5ddd0;
+  --color-memory-family: #4db69f;
 }
 
 *,
@@ -142,4 +163,18 @@ body {
 .chat-scroll::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: var(--radius-full);
+}
+
+/* Auth marketing canvas — mint field + soft arc (Figma board) */
+.dashboard-canvas {
+  background-color: var(--color-dashboard-canvas);
+}
+
+.auth-canvas {
+  background-color: var(--color-auth-canvas);
+  background-image: radial-gradient(
+    120% 80% at 50% 0%,
+    color-mix(in srgb, var(--color-accent) 35%, transparent) 0%,
+    transparent 55%
+  );
 }

@@ -48,8 +48,13 @@ export default function HomePage() {
             support — never diagnosis, always human-centered.
           </Text>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/dashboard">
+              <Button size="lg">View health dashboard</Button>
+            </Link>
             <Link href="/chat">
-              <Button size="lg">Start a conversation</Button>
+              <Button variant="outline" size="lg">
+                Start a conversation
+              </Button>
             </Link>
             <Link href="/signup">
               <Button variant="outline" size="lg">

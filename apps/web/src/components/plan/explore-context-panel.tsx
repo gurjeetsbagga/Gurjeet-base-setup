@@ -1,0 +1,41 @@
+import { Card } from "@/components/ui/card";
+import { ExploreContextCard } from "@/components/plan/explore-context-card";
+import { ExploreQuickActions } from "@/components/plan/explore-quick-actions";
+import type { ExploreContextPanelData } from "@/lib/plan/types";
+import { cn } from "@/lib/utils";
+
+export function ExploreContextPanel({
+  context,
+  onItemSelect,
+  onQuickAction,
+  className,
+}: {
+  context: ExploreContextPanelData;
+  onItemSelect?: (id: string) => void;
+  onQuickAction?: (id: string) => void;
+  className?: string;
+}) {
+  return (
+    <Card
+      className={cn("flex flex-col p-6 shadow-soft sm:p-8", className)}
+      data-testid="explore-context-panel"
+    >
+      <h2 className="text-h3 font-semibold text-foreground">{context.title}</h2>
+      <ul className="mt-4 flex flex-col divide-y divide-border-subtle" role="list">
+        {context.items.map((item) => (
+          <li key={item.id}>
+            <ExploreContextCard
+              item={item}
+              onSelect={onItemSelect ? () => onItemSelect(item.id) : undefined}
+            />
+          </li>
+        ))}
+      </ul>
+      <ExploreQuickActions
+        prompt={context.prompt}
+        actions={context.quickActions}
+        onAction={onQuickAction ? (a) => onQuickAction(a.id) : undefined}
+      />
+    </Card>
+  );
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AuthForm } from "@/components/auth/auth-form";
+import { LoginForm } from "@/components/auth/login-form";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { ApiClientError } from "@/lib/api/client";
 
@@ -10,8 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   return (
-    <AuthForm
-      mode="login"
+    <LoginForm
       onSubmit={async (data) => {
         try {
           await login(data);
