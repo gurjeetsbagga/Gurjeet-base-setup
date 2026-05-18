@@ -8,8 +8,10 @@ import {
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { normalizePagination, paginatedResponse } from "../../shared/pagination";
-import { AiService } from "../ai/ai.service";
+import { AiOrchestrationService } from "../ai/ai-orchestration.service";
+import { InstructionSnapshotService } from "../ai/prompts/instruction-snapshot.service";
 import { MemoryService } from "../memory/memory.service";
+import { instructionAuditFields, mergeMessageMetadata } from "./utils/instruction-audit.util";
 import type { CreateConversationDto } from "./dto/create-conversation.dto";
 import type { SendMessageDto } from "./dto/send-message.dto";
 import type { QueryConversationsDto } from "./dto/query-conversations.dto";
@@ -36,7 +38,8 @@ export class ConversationsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ai: AiService,
+    private readonly ai: AiOrchestrationService,
+    private readonly instructionSnapshot: InstructionSnapshotService,
     private readonly promptContext: PromptContextBuilder,
     private readonly memory: MemoryService,
   ) {}
@@ -135,6 +138,9 @@ export class ConversationsService {
 
     await this.ensureOwnership(userId, conversationId);
 
+    const snapshot = await this.instructionSnapshot.resolveActiveSnapshot();
+    const audit = instructionAuditFields(snapshot);
+
     await this.prisma.message.create({
       data: {
         conversationId,
@@ -142,6 +148,8 @@ export class ConversationsService {
         role: "USER",
         status: "COMPLETED",
         content: dto.message,
+        instructionVersionId: audit.instructionVersionId,
+        metadata: audit.metadata,
       },
     });
 
@@ -156,20 +164,42 @@ export class ConversationsService {
         userId,
         conversationId,
         model: undefined,
+        instructionSnapshot: snapshot,
       },
       promptCtx,
+      { instructionSnapshot: snapshot },
     );
+
+    let metadata = mergeMessageMetadata(aiResponse.metadata as MessageMetadata, snapshot);
 
     const assistantMessage = await this.persistAssistantMessage(
       conversationId,
       aiResponse.content,
       aiResponse.tokenCount.total,
-      aiResponse.metadata as MessageMetadata,
+      metadata,
+      snapshot,
     );
+
+    metadata = await this.ai.finalizeProposedActions(
+      userId,
+      conversationId,
+      assistantMessage.id,
+      metadata,
+    );
+
+    if (metadata.proposedActionIds?.length) {
+      await this.prisma.message.update({
+        where: { id: assistantMessage.id },
+        data: { metadata: metadata as Prisma.InputJsonValue },
+      });
+    }
 
     await this.afterAssistantResponse(userId, conversationId, dto.message, aiResponse.content);
 
-    return this.toMessageView(assistantMessage);
+    return this.toMessageView({
+      ...assistantMessage,
+      metadata,
+    });
   }
 
   /**
@@ -180,38 +210,47 @@ export class ConversationsService {
     conversationId: string,
     dto: SendMessageDto,
   ): AsyncGenerator<StreamMessageEvent> {
-    await this.ensureOwnership(userId, conversationId);
-
-    await this.prisma.message.create({
-      data: {
-        conversationId,
-        userId,
-        role: "USER",
-        status: "COMPLETED",
-        content: dto.message,
-      },
-    });
-
-    const history = await this.loadHistory(conversationId);
-    const promptCtx = await this.promptContext.build(userId, dto.message, {
-      recoveryContext: dto.context,
-    });
-
-    const assistantRow = await this.prisma.message.create({
-      data: {
-        conversationId,
-        role: "ASSISTANT",
-        status: "STREAMING",
-        content: "",
-      },
-    });
-
+    let assistantRow: { id: string } | null = null;
     let assembled = "";
 
     try {
+      await this.ensureOwnership(userId, conversationId);
+
+      const snapshot = await this.instructionSnapshot.resolveActiveSnapshot();
+      const audit = instructionAuditFields(snapshot);
+
+      await this.prisma.message.create({
+        data: {
+          conversationId,
+          userId,
+          role: "USER",
+          status: "COMPLETED",
+          content: dto.message,
+          instructionVersionId: audit.instructionVersionId,
+          metadata: audit.metadata,
+        },
+      });
+
+      const history = await this.loadHistory(conversationId);
+      const promptCtx = await this.promptContext.build(userId, dto.message, {
+        recoveryContext: dto.context,
+      });
+
+      assistantRow = await this.prisma.message.create({
+        data: {
+          conversationId,
+          role: "ASSISTANT",
+          status: "STREAMING",
+          content: "",
+          instructionVersionId: audit.instructionVersionId,
+          metadata: audit.metadata,
+        },
+      });
+
       for await (const chunk of this.ai.stream(
-        { messages: history, userId, conversationId },
+        { messages: history, userId, conversationId, instructionSnapshot: snapshot },
         promptCtx,
+        { instructionSnapshot: snapshot },
       )) {
         if (!chunk.done) {
           assembled += chunk.delta;
@@ -219,16 +258,20 @@ export class ConversationsService {
         } else {
           if (chunk.delta) assembled += chunk.delta;
 
+          const streamMeta = mergeMessageMetadata(
+            {
+              model: this.ai.providerName,
+            },
+            snapshot,
+          );
+
           const updated = await this.prisma.message.update({
             where: { id: assistantRow.id },
             data: {
               content: assembled,
               status: "COMPLETED",
               tokenCount: chunk.usage?.total ?? null,
-              metadata: {
-                model: this.ai.providerName,
-                finishReason: chunk.finishReason,
-              } as Prisma.InputJsonValue,
+              metadata: streamMeta as Prisma.InputJsonValue,
             },
           });
 
@@ -249,11 +292,17 @@ export class ConversationsService {
         }
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Stream failed";
-      await this.prisma.message.update({
-        where: { id: assistantRow.id },
-        data: { status: "FAILED", content: assembled || message },
-      });
+      const message = formatStreamError(error);
+      if (assistantRow) {
+        try {
+          await this.prisma.message.update({
+            where: { id: assistantRow.id },
+            data: { status: "FAILED", content: assembled || message },
+          });
+        } catch {
+          /* non-blocking */
+        }
+      }
       yield { type: "error", error: message };
     }
   }
@@ -298,7 +347,7 @@ export class ConversationsService {
     });
   }
 
-  /** Prepare memory extraction — stores a conversation note for future semantic indexing */
+  /** Memory note + rolling conversation summary on profile (Step 1). */
   private async afterAssistantResponse(
     userId: string,
     conversationId: string,
@@ -317,6 +366,40 @@ export class ConversationsService {
     } catch {
       /* non-blocking */
     }
+
+    try {
+      await this.refreshConversationSummary(userId, conversationId);
+    } catch {
+      /* non-blocking */
+    }
+  }
+
+  private async refreshConversationSummary(userId: string, conversationId: string): Promise<void> {
+    const recent = await this.prisma.message.findMany({
+      where: { conversationId, status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      select: { role: true, content: true },
+    });
+
+    if (recent.length === 0) return;
+
+    const summary = recent
+      .reverse()
+      .map((m) => `${m.role === "USER" ? "User" : "Auryn"}: ${truncate(m.content, 220)}`)
+      .join("\n");
+
+    const clipped = truncate(summary, 4000);
+
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { summary: clipped },
+    });
+
+    await this.prisma.userProfile.updateMany({
+      where: { userId },
+      data: { conversationSummary: clipped },
+    });
   }
 
   private async persistAssistantMessage(
@@ -324,7 +407,10 @@ export class ConversationsService {
     content: string,
     tokenCount: number,
     metadata: MessageMetadata,
+    snapshot: Awaited<ReturnType<InstructionSnapshotService["resolveActiveSnapshot"]>>,
   ) {
+    const audit = instructionAuditFields(snapshot);
+
     const assistantMessage = await this.prisma.message.create({
       data: {
         conversationId,
@@ -332,6 +418,7 @@ export class ConversationsService {
         status: "COMPLETED",
         content,
         tokenCount,
+        instructionVersionId: audit.instructionVersionId,
         metadata: metadata as Prisma.InputJsonValue,
       },
     });
@@ -403,6 +490,7 @@ export class ConversationsService {
     content: string;
     tokenCount: number | null;
     metadata: unknown;
+    instructionVersionId?: string | null;
     feedbackRating: string | null;
     createdAt: Date;
   }): MessageView {
@@ -413,6 +501,7 @@ export class ConversationsService {
       content: row.content,
       tokenCount: row.tokenCount,
       metadata: (row.metadata ?? {}) as MessageMetadata,
+      instructionVersionId: row.instructionVersionId ?? null,
       feedbackRating: row.feedbackRating,
       createdAt: row.createdAt,
     };
@@ -421,4 +510,12 @@ export class ConversationsService {
 
 function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max)}…`;
+}
+
+function formatStreamError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (/instruction_version_id|column .* does not exist|P2022/i.test(raw)) {
+    return "Database schema is out of date. Run pnpm db:migrate:deploy from the repo root, then restart the API.";
+  }
+  return raw || "Stream failed";
 }

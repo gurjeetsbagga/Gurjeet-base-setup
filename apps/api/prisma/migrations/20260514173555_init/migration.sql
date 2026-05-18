@@ -50,6 +50,18 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+CREATE TABLE "password_reset_tokens" (
+    "id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "token_hash" TEXT NOT NULL,
+    "expires_at" TIMESTAMP(3) NOT NULL,
+    "used_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "password_reset_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "user_profiles" (
     "id" UUID NOT NULL,
     "user_id" UUID NOT NULL,
@@ -100,6 +112,7 @@ CREATE TABLE "messages" (
     "content" TEXT NOT NULL,
     "token_count" INTEGER,
     "metadata" JSONB NOT NULL DEFAULT '{}',
+    "instruction_version_id" UUID,
     "feedback_rating" TEXT,
     "feedback_comment" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -229,6 +242,15 @@ CREATE INDEX "users_role_idx" ON "users"("role");
 CREATE INDEX "users_is_active_idx" ON "users"("is_active");
 
 -- CreateIndex
+CREATE INDEX "password_reset_tokens_user_id_idx" ON "password_reset_tokens"("user_id");
+
+-- CreateIndex
+CREATE INDEX "password_reset_tokens_token_hash_idx" ON "password_reset_tokens"("token_hash");
+
+-- CreateIndex
+CREATE INDEX "password_reset_tokens_expires_at_idx" ON "password_reset_tokens"("expires_at");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "user_profiles_user_id_key" ON "user_profiles"("user_id");
 
 -- CreateIndex
@@ -242,6 +264,9 @@ CREATE INDEX "messages_conversation_id_created_at_idx" ON "messages"("conversati
 
 -- CreateIndex
 CREATE INDEX "messages_user_id_created_at_idx" ON "messages"("user_id", "created_at");
+
+-- CreateIndex
+CREATE INDEX "messages_instruction_version_id_idx" ON "messages"("instruction_version_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "admin_instructions_slug_key" ON "admin_instructions"("slug");
@@ -301,6 +326,9 @@ CREATE INDEX "flagged_interactions_user_id_idx" ON "flagged_interactions"("user_
 CREATE INDEX "flagged_interactions_flag_type_status_idx" ON "flagged_interactions"("flag_type", "status");
 
 -- AddForeignKey
+ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -314,6 +342,9 @@ ALTER TABLE "messages" ADD CONSTRAINT "messages_user_id_fkey" FOREIGN KEY ("user
 
 -- AddForeignKey
 ALTER TABLE "instruction_versions" ADD CONSTRAINT "instruction_versions_instruction_id_fkey" FOREIGN KEY ("instruction_id") REFERENCES "admin_instructions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_instruction_version_id_fkey" FOREIGN KEY ("instruction_version_id") REFERENCES "instruction_versions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "memory_entries" ADD CONSTRAINT "memory_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

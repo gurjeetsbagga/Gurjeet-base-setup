@@ -131,14 +131,30 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  profile       UserProfile?
-  conversations Conversation[]
-  messages      Message[]
-  memoryEntries MemoryEntry[]
+  profile              UserProfile?
+  conversations        Conversation[]
+  messages             Message[]
+  memoryEntries        MemoryEntry[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([role])
   @@index([isActive])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -238,6 +254,10 @@ model Message {
   /// Structured AI metadata (tool calls, citations, safety flags, latency)
   metadata Json @default("{}")
 
+  /// Primary admin instruction version applied when this message was sent (compliance anchor)
+  instructionVersionId String?            @map("instruction_version_id") @db.Uuid
+  instructionVersion   InstructionVersion? @relation(fields: [instructionVersionId], references: [id], onDelete: SetNull)
+
   /// User feedback on assistant messages
   feedbackRating  String? @map("feedback_rating")
   feedbackComment String? @map("feedback_comment") @db.Text
@@ -314,6 +334,8 @@ model InstructionVersion {
   createdBy String @map("created_by")
 
   createdAt DateTime @default(now()) @map("created_at")
+
+  messages Message[]
 
   @@unique([instructionId, version])
   @@index([instructionId, createdAt])

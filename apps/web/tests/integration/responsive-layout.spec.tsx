@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { ChatView } from "@/components/chat/chat-view";
 import { render, screen } from "../helpers/render";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/chat/conv-1",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock("@/lib/hooks/use-chat", () => ({
   useChat: () => ({
     messages: [{ id: "1", role: "ASSISTANT", content: "Hi" }],
@@ -10,6 +15,9 @@ vi.mock("@/lib/hooks/use-chat", () => ({
     sendMessage: vi.fn(),
     isSending: false,
     showTyping: false,
+    isLoadingHistory: false,
+    showWelcomeOnly: false,
+    error: null,
     scrollRef: { current: null },
     activeConversationId: null,
   }),
@@ -38,7 +46,7 @@ describe("Responsive layout", () => {
 
       render(<ChatView />);
       expect(screen.getByRole("log")).toBeVisible();
-      expect(screen.getByLabelText(/message to auryn/i)).toBeVisible();
+      expect(screen.getByLabelText(/ask auryn anything/i)).toBeVisible();
     });
   }
 });

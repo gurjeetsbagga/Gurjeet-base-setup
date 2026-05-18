@@ -68,9 +68,14 @@ export class ConversationsController {
       res.setHeader("X-Accel-Buffering", "no");
 
       const flushable = res as Response & { flush?: () => void };
-      for await (const event of this.conversationsService.streamMessage(userId, id, dto)) {
-        res.write(`data: ${JSON.stringify(event)}\n\n`);
-        flushable.flush?.();
+      try {
+        for await (const event of this.conversationsService.streamMessage(userId, id, dto)) {
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
+          flushable.flush?.();
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Stream failed";
+        res.write(`data: ${JSON.stringify({ type: "error", error: message })}\n\n`);
       }
       res.write("data: [DONE]\n\n");
       res.end();

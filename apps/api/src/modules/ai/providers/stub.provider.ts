@@ -25,6 +25,22 @@ export class StubAiProvider implements AiProvider {
 
     const lastUserMessage = [...request.messages].reverse().find((m) => m.role === "user");
 
+    if (request.responseFormat) {
+      const text = buildStubResponse(lastUserMessage?.content);
+      return {
+        content: JSON.stringify({
+          content: text,
+          tone: "supportive",
+          escalation: { type: "none" },
+          proposedActions: [],
+          memoryHints: [],
+        }),
+        model: `stub/${request.model}`,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        finishReason: "stop",
+      };
+    }
+
     return {
       content: buildStubResponse(lastUserMessage?.content),
       model: `stub/${request.model}`,

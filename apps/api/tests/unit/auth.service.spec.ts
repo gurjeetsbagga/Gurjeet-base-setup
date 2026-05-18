@@ -24,11 +24,19 @@ describe("AuthService (local JWT)", () => {
     findByAuthId: vi.fn(),
   };
 
+  const app = {
+    webUrl: "http://localhost:3000",
+  };
+
   const supabase = {
     isEnabled: false,
     admin: null,
     client: null,
     forUser: vi.fn(),
+  };
+
+  const mail = {
+    sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
   };
 
   let authService: AuthService;
@@ -39,10 +47,12 @@ describe("AuthService (local JWT)", () => {
     localToken = new LocalTokenService(authConfig as never);
     authService = new AuthService(
       authConfig as never,
+      app as never,
       supabase as never,
       prisma as never,
       users as never,
       localToken,
+      mail as never,
     );
   });
 

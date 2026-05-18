@@ -1,8 +1,12 @@
 export { AllExceptionsFilter } from "./filters/http-exception.filter";
 export { ErrorCode } from "./filters/error-codes";
 export type { ApiErrorResponse, FieldError } from "./filters/error-codes";
-export { LoggingInterceptor } from "./interceptors/logging.interceptor";
-export { StructuredLogger } from "./logger";
+export {
+  AurynLoggerModule,
+  LoggerService,
+  AiAuditLogger,
+  RequestLoggerInterceptor,
+} from "./logger";
 export { RequestIdMiddleware, REQUEST_ID_HEADER } from "./middleware";
 export { SupabaseAuthGuard } from "./guards/supabase-auth.guard";
 export { Public, IS_PUBLIC_KEY } from "./decorators/public.decorator";

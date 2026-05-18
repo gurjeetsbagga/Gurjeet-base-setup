@@ -5,17 +5,23 @@ import { cn } from "@/lib/utils";
 
 export function ExploreContextCard({
   item,
+  selected = false,
   onSelect,
   className,
 }: {
   item: ExploreContextItem;
+  selected?: boolean;
   onSelect?: (item: ExploreContextItem) => void;
   className?: string;
 }) {
-  const content = (
+  const inner = (
     <>
       <span
-        className={cn("size-3 shrink-0 rounded-full", exploreTopicToneStyles[item.tone])}
+        className={cn(
+          "size-3.5 shrink-0 rounded-full",
+          exploreTopicToneStyles[item.tone],
+          selected && "ring-2 ring-offset-2 ring-dashboard-brand/40",
+        )}
         aria-hidden
       />
       <div className="min-w-0 flex-1">
@@ -26,27 +32,24 @@ export function ExploreContextCard({
     </>
   );
 
+  const cardClass = cn(
+    "flex w-full items-center gap-3 rounded-xl border border-border-subtle bg-surface px-4 py-3.5 text-left shadow-soft transition-colors",
+    selected && "border-dashboard-brand/30 bg-dashboard-brand-muted/30",
+    !selected && "hover:border-border hover:bg-muted/30",
+    className,
+  );
+
   if (onSelect) {
     return (
-      <button
-        type="button"
-        onClick={() => onSelect(item)}
-        className={cn(
-          "flex w-full items-center gap-3 rounded-xl px-1 py-3 text-left transition-colors hover:bg-muted/60",
-          className,
-        )}
-      >
-        {content}
+      <button type="button" onClick={() => onSelect(item)} className={cardClass}>
+        {inner}
       </button>
     );
   }
 
   return (
-    <div
-      className={cn("flex items-center gap-3 py-3", className)}
-      data-testid="explore-context-card"
-    >
-      {content}
+    <div className={cardClass} data-testid="explore-context-card">
+      {inner}
     </div>
   );
 }

@@ -1,17 +1,17 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { AiService } from "@/modules/ai/ai.service";
+import { AiOrchestrationService } from "@/modules/ai/ai-orchestration.service";
 import { PromptAssemblerService } from "@/modules/ai/prompts/prompt-assembler.service";
 import { createAiTestModule } from "../helpers/create-ai-test-module";
 
 describe("AI orchestration (integration)", () => {
-  let aiService: AiService;
+  let aiService: AiOrchestrationService;
   let promptAssembler: PromptAssemblerService;
 
   beforeAll(async () => {
     const module = await createAiTestModule({
       adminInstructions: [{ title: "Tone", content: "Stay calm and supportive.", priority: 1 }],
     });
-    aiService = module.get(AiService);
+    aiService = module.get(AiOrchestrationService);
     promptAssembler = module.get(PromptAssemblerService);
   });
 

@@ -1,3 +1,4 @@
+import type { InstructionSnapshot } from "../../ai/prompts/instruction-snapshot.service";
 import type { MessageMetadata } from "./message.interface";
 
 /**
@@ -11,6 +12,8 @@ import type { MessageMetadata } from "./message.interface";
 export interface AiCompletionRequest {
   /** Conversation history (already trimmed to context window) */
   messages: AiMessage[];
+  /** Request OpenAI structured JSON output (when configured) */
+  structuredOutput?: boolean;
   /** Model override (falls back to config default) */
   model?: string;
   /** Max tokens for the completion */
@@ -21,6 +24,8 @@ export interface AiCompletionRequest {
   userId: string;
   /** Conversation ID for logging correlation */
   conversationId: string;
+  /** Frozen admin instruction versions for this turn (Step 1 audit) */
+  instructionSnapshot?: InstructionSnapshot;
 }
 
 export interface AiMessage {

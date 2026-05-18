@@ -2,7 +2,7 @@ import type { DashboardHealthViewData, DashboardHomeData } from "./types";
 
 /** Mock home dashboard — replace with API hook when backend is ready */
 export const mockDashboardHomeData: DashboardHomeData = {
-  breadcrumb: "WEB VIEW 01 / AURYN HOME",
+  breadcrumb: "",
   hero: {
     title: "Your intelligent wellness companion",
     subtitle: "I remember. I learn. I support. So you can focus on you.",
@@ -49,7 +49,7 @@ export const mockDashboardHomeData: DashboardHomeData = {
 
 /** Metrics-focused view data — for future health sub-route */
 export const mockDashboardHealthViewData: DashboardHealthViewData = {
-  breadcrumb: "WEB VIEW 01 / HEALTH DASHBOARD",
+  breadcrumb: "",
   physician: {
     id: "physicianos-1",
     name: "PhysicianOS",

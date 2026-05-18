@@ -104,6 +104,7 @@
   --color-dashboard-brand-muted: #e8f4ec;
   --color-dashboard-canvas: #f4f7f6;
   --width-dashboard-sidebar: 15.5rem;
+  --width-dashboard-context-panel: 26rem;
   --width-dashboard-prompt: 42rem;
 
   /* Private Brain — memory category indicators */
@@ -171,6 +172,11 @@ body {
 /* Auth marketing canvas — mint field + soft arc (Figma board) */
 .dashboard-canvas {
   background-color: var(--color-dashboard-canvas);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-border) 55%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
 }
 
 .auth-canvas {

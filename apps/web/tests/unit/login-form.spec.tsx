@@ -4,9 +4,9 @@ import { LoginForm } from "@/components/auth/login-form";
 import { render, screen } from "../helpers/render";
 
 describe("LoginForm", () => {
-  it("renders split-screen Figma-aligned login UI", () => {
+  it("renders standard login heading by default", () => {
     render(<LoginForm onSubmit={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: /welcome back/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /log in to your account/i })).toBeInTheDocument();
     expect(screen.getByText(/sign in to continue your recovery journey/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/auryn@example.com/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();

@@ -22,4 +22,10 @@ export {
   aiActionProposalSchema,
   aiEscalationSchema,
 } from "./orchestrated-response.schema";
-export type { AiOrchestratedResponse, AiActionProposal } from "./orchestrated-response.schema";
+export { ORCHESTRATED_RESPONSE_JSON_SCHEMA } from "./orchestrated-json-schema";
+export { normalizeOrchestratedResponse } from "./normalize-orchestrated-response";
+export type {
+  AiOrchestratedResponse,
+  NormalizedAiOrchestratedResponse,
+  AiActionProposal,
+} from "./orchestrated-response.schema";

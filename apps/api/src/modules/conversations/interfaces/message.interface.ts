@@ -10,6 +10,7 @@ export interface MessageView {
   content: string;
   tokenCount: number | null;
   metadata: MessageMetadata;
+  instructionVersionId: string | null;
   feedbackRating: string | null;
   createdAt: Date;
 }
@@ -34,6 +35,33 @@ export interface MessageMetadata {
   durationMs?: number;
   /** AI provider used for this message (e.g. openai, stub) */
   provider?: string;
+  /** Validated action proposal IDs (backend pipeline only — never executed by AI) */
+  proposedActionIds?: string[];
+  /** Memory signals for future extraction (not persisted as memory automatically) */
+  memorySignals?: string[];
+  /** Assistant tone from structured output */
+  tone?: string;
+  /** Disclaimer text surfaced to UI */
+  disclaimer?: string;
+  /** Escalation hint from structured output */
+  escalation?: { type: string; message?: string };
+  /** Internal: parsed structured payload (not sent to clients by default) */
+  orchestration?: {
+    structured?: Record<string, unknown>;
+    structuredParseFailed?: boolean;
+  };
+  /** Admin instruction versions applied for this turn (Step 1 audit) */
+  appliedInstructionVersions?: AppliedInstructionVersionRef[];
+}
+
+export interface AppliedInstructionVersionRef {
+  instructionId: string;
+  versionId: string;
+  version: number;
+  slug: string;
+  title: string;
+  category: string;
+  priority: number;
 }
 
 export interface Citation {

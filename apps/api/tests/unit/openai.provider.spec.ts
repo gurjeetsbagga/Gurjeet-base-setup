@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GatewayTimeoutException } from "@nestjs/common";
 import { OpenAiProvider } from "@/modules/ai/providers/openai.provider";
+import { createMockAiAuditLogger } from "../helpers/mock-ai-audit";
 
 const createMock = vi.fn();
 
@@ -42,7 +43,7 @@ describe("OpenAiProvider", () => {
       usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
     });
 
-    const provider = new OpenAiProvider(config as never);
+    const provider = new OpenAiProvider(config as never, createMockAiAuditLogger());
     provider.onModuleInit();
 
     const result = await provider.complete({
@@ -63,7 +64,7 @@ describe("OpenAiProvider", () => {
     abortError.name = "AbortError";
     createMock.mockRejectedValue(abortError);
 
-    const provider = new OpenAiProvider(config as never);
+    const provider = new OpenAiProvider(config as never, createMockAiAuditLogger());
     provider.onModuleInit();
 
     await expect(
@@ -84,7 +85,7 @@ describe("OpenAiProvider", () => {
       usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
     });
 
-    const provider = new OpenAiProvider(config as never);
+    const provider = new OpenAiProvider(config as never, createMockAiAuditLogger());
     provider.onModuleInit();
 
     const result = await provider.complete({

@@ -21,14 +21,19 @@ function initialsFromUser(email?: string | null, displayName?: string | null): s
 
 export function DashboardLayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const isExplore = pathname.startsWith("/chat") || pathname.startsWith("/plan");
+
+  if (isExplore) {
+    return <>{children}</>;
+  }
+
   const { user } = useAuth();
-  const data = mockDashboardHomeData;
   const meta = getDashboardPageMeta(pathname);
 
   return (
     <DashboardShell
       breadcrumb={meta.breadcrumb}
-      activeFocus={data.sidebarFocus}
+      activeFocus={mockDashboardHomeData.sidebarFocus}
       userInitials={initialsFromUser(user?.email, user?.displayName ?? null)}
     >
       {children}

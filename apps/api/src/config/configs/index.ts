@@ -15,3 +15,6 @@ export type { SupabaseConfig } from "./supabase.config";
 
 export { rateLimitConfig } from "./rate-limit.config";
 export type { RateLimitConfig } from "./rate-limit.config";
+
+export { loggingConfig } from "./logging.config";
+export type { LoggingConfig, PinoLogLevel } from "./logging.config";

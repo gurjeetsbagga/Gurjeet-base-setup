@@ -14,7 +14,8 @@ export const DASHBOARD_TOP_TABS: DashboardTab[] = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard" },
   { id: "private-brain", label: "Private Brain", href: "/private-brain" },
   { id: "plans", label: "Plans", href: "/plan" },
-  { id: "messages", label: "Messages", href: "/dashboard" },
+  { id: "messages", label: "Messages", href: "/chat" },
 ];
 
 export const SIDEBAR_WIDTH = "var(--width-dashboard-sidebar)";
+export const CONTEXT_PANEL_WIDTH = "var(--width-dashboard-context-panel)";

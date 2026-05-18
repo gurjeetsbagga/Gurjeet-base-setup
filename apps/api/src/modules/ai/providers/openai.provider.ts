@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import OpenAI from "openai";
+import { AiAuditLogger } from "../../../common/logger";
 import { openaiConfig, redactApiKey } from "../../../config/configs/openai.config";
 import { withRetry } from "../utils/retry";
 import type {
@@ -26,6 +27,7 @@ export class OpenAiProvider implements AiProvider, OnModuleInit {
   constructor(
     @Inject(openaiConfig.KEY)
     private readonly config: ConfigType<typeof openaiConfig>,
+    private readonly aiAudit: AiAuditLogger,
   ) {}
 
   onModuleInit(): void {
@@ -102,6 +104,11 @@ export class OpenAiProvider implements AiProvider, OnModuleInit {
         maxAttempts: this.config.maxRetries,
         baseDelayMs: this.config.retryBaseDelayMs,
         maxDelayMs: 8000,
+        onRetry: (info) =>
+          this.aiAudit.logRetry({
+            requestId: request.requestId,
+            ...info,
+          }),
       },
     );
   }
@@ -126,6 +133,11 @@ export class OpenAiProvider implements AiProvider, OnModuleInit {
         maxAttempts: this.config.maxRetries,
         baseDelayMs: this.config.retryBaseDelayMs,
         maxDelayMs: 8000,
+        onRetry: (info) =>
+          this.aiAudit.logRetry({
+            requestId: request.requestId,
+            ...info,
+          }),
       },
     );
 

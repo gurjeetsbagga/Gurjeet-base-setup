@@ -11,7 +11,7 @@ describe("DashboardSidebar", () => {
   it("renders workspace navigation and active focus", () => {
     render(<DashboardSidebar activeFocus={mockDashboardHomeData.sidebarFocus} />);
 
-    expect(screen.getByText(/hey auryn/i)).toBeInTheDocument();
+    expect(screen.getByText(/workspace/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /health/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /private brain/i })).toHaveAttribute(
       "href",

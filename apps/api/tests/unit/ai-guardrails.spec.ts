@@ -1,8 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AiGuardrailsService } from "@/modules/ai/guardrails/ai-guardrails.service";
 
+const aiAudit = {
+  logSafetyEvent: vi.fn(),
+  logValidationFailure: vi.fn(),
+  logEscalation: vi.fn(),
+};
+
 describe("AiGuardrailsService", () => {
-  const guardrails = new AiGuardrailsService();
+  const guardrails = new AiGuardrailsService(aiAudit as never);
   const ctx = { userId: "user-1", requestId: "req-1" };
 
   it("blocks prompt injection", () => {

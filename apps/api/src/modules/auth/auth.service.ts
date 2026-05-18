@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -9,15 +10,28 @@ import {
 import { ConfigType } from "@nestjs/config";
 import { UserRole as PrismaUserRole } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { appConfig } from "../../config/configs/app.config";
 import { authConfig } from "../../config/configs/auth.config";
+import { MailService } from "../../integrations/mail/mail.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { SupabaseService } from "../../integrations/supabase";
 import { UsersService } from "../users/users.service";
-import type { LoginDto, RegisterDto, RefreshTokenDto, AuthResponseDto } from "./dto";
+import type {
+  LoginDto,
+  RegisterDto,
+  RefreshTokenDto,
+  AuthResponseDto,
+  ResetPasswordDto,
+} from "./dto";
+import { PASSWORD_RESET_REQUEST_MESSAGE } from "./dto/forgot-password.dto";
 import { LocalTokenService } from "./services/local-token.service";
 import { hashPassword, verifyPassword } from "./utils/password.util";
+import { generateResetToken, hashResetToken } from "./utils/reset-token.util";
 import type { AuthUser } from "./interfaces";
 import { UserRole } from "./interfaces";
+
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const PASSWORD_RESET_SUCCESS_MESSAGE = "Your password has been updated. You can sign in now.";
 
 @Injectable()
 export class AuthService {
@@ -26,10 +40,13 @@ export class AuthService {
   constructor(
     @Inject(authConfig.KEY)
     private readonly config: ConfigType<typeof authConfig>,
+    @Inject(appConfig.KEY)
+    private readonly app: ConfigType<typeof appConfig>,
     private readonly supabase: SupabaseService,
     private readonly prisma: PrismaService,
     private readonly users: UsersService,
     private readonly localToken: LocalTokenService,
+    private readonly mail: MailService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
@@ -73,6 +90,42 @@ export class AuthService {
       await this.supabase.admin.auth.admin.signOut(_userId, "global");
     }
     this.logger.debug(`logout() user=${_userId}`);
+  }
+
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const normalized = email.trim().toLowerCase();
+
+    try {
+      if (this.supabase.isEnabled) {
+        await this.requestPasswordResetSupabase(normalized);
+      } else if (this.localToken.isConfigured) {
+        await this.requestPasswordResetLocal(normalized);
+      }
+    } catch (err) {
+      this.logger.warn(`requestPasswordReset failed for ${normalized}: ${String(err)}`);
+    }
+
+    return { message: PASSWORD_RESET_REQUEST_MESSAGE };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    if (dto.accessToken) {
+      if (!this.supabase.isEnabled) {
+        throw new BadRequestException("Invalid or expired reset link");
+      }
+      await this.resetPasswordSupabase(dto.accessToken, dto.password);
+      return { message: PASSWORD_RESET_SUCCESS_MESSAGE };
+    }
+
+    if (dto.token) {
+      if (!this.localToken.isConfigured) {
+        throw new BadRequestException("Invalid or expired reset link");
+      }
+      await this.resetPasswordLocal(dto.token, dto.password);
+      return { message: PASSWORD_RESET_SUCCESS_MESSAGE };
+    }
+
+    throw new BadRequestException("Invalid or expired reset link");
   }
 
   mapToAuthUser(supabaseUser: {
@@ -266,6 +319,104 @@ export class AuthService {
       data.session.refresh_token,
       data.session.expires_in ?? 3600,
     );
+  }
+
+  // ── Password reset ───────────────────────────────────────────
+
+  private getWebAppUrl(): string {
+    const url = this.app.webUrl ?? process.env.WEB_URL ?? process.env.APP_URL;
+    if (!url) {
+      throw new ServiceUnavailableException("WEB_URL is not configured");
+    }
+    return url.replace(/\/$/, "");
+  }
+
+  private async requestPasswordResetSupabase(email: string): Promise<void> {
+    const client = this.supabase.client;
+    if (!client) {
+      throw new ServiceUnavailableException("Supabase anon client unavailable");
+    }
+
+    const redirectTo = `${this.getWebAppUrl()}/reset-password`;
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) {
+      throw error;
+    }
+  }
+
+  private async requestPasswordResetLocal(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user?.passwordHash || !user.isActive) {
+      return;
+    }
+
+    const rawToken = generateResetToken();
+    const tokenHash = hashResetToken(rawToken);
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    const resetUrl = `${this.getWebAppUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    await this.mail.sendPasswordReset({ to: email, resetUrl });
+  }
+
+  private async resetPasswordSupabase(accessToken: string, password: string): Promise<void> {
+    const admin = this.supabase.admin;
+    if (!admin) {
+      throw new ServiceUnavailableException("Supabase admin client unavailable");
+    }
+
+    const { data, error } = await admin.auth.getUser(accessToken);
+    if (error || !data.user) {
+      throw new BadRequestException("Invalid or expired reset link");
+    }
+
+    const { error: updateError } = await admin.auth.admin.updateUserById(data.user.id, {
+      password,
+    });
+    if (updateError) {
+      this.logger.warn(`Supabase password update failed: ${updateError.message}`);
+      throw new BadRequestException("Unable to reset password. Please request a new link.");
+    }
+  }
+
+  private async resetPasswordLocal(rawToken: string, password: string): Promise<void> {
+    const tokenHash = hashResetToken(rawToken);
+    const record = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: { user: true },
+    });
+
+    if (!record?.user.isActive) {
+      throw new BadRequestException("Invalid or expired reset link");
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId: record.userId, usedAt: null, id: { not: record.id } },
+        data: { usedAt: new Date() },
+      }),
+    ]);
   }
 
   // ── Local JWT (development) ─────────────────────────────────

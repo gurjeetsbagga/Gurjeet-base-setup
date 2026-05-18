@@ -1,13 +1,15 @@
-import { Logger } from "@nestjs/common";
-
-const logger = new Logger("AiRetry");
-
 export interface RetryOptions {
   maxAttempts: number;
   baseDelayMs: number;
   maxDelayMs: number;
   /** Return true to retry this error */
   isRetryable?: (error: unknown) => boolean;
+  onRetry?: (info: {
+    attempt: number;
+    maxAttempts: number;
+    delayMs: number;
+    reason: string;
+  }) => void;
 }
 
 const DEFAULT_RETRYABLE = (error: unknown): boolean => {
@@ -44,7 +46,12 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions):
         options.baseDelayMs * 2 ** (attempt - 1) + Math.random() * 200,
         options.maxDelayMs,
       );
-      logger.warn(`Retry attempt ${attempt}/${options.maxAttempts} after ${Math.round(delay)}ms`);
+      options.onRetry?.({
+        attempt,
+        maxAttempts: options.maxAttempts,
+        delayMs: Math.round(delay),
+        reason: error instanceof Error ? error.message : String(error),
+      });
       await sleep(delay);
     }
   }

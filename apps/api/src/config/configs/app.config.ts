@@ -48,7 +48,12 @@ function resolveCorsOrigins(isDev: boolean): string[] {
   }
 
   if (isDev) {
-    return [localUrl("web"), localUrl("admin")];
+    return [
+      localUrl("web"),
+      localUrl("admin"),
+      `http://127.0.0.1:${SERVICE_PORTS.web}`,
+      `http://127.0.0.1:${SERVICE_PORTS.admin}`,
+    ];
   }
 
   throw new Error(

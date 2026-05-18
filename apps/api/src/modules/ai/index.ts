@@ -1,5 +1,6 @@
 export { AiModule } from "./ai.module";
 export { AiService } from "./ai.service";
+export { AiOrchestrationService } from "./ai-orchestration.service";
 
 export type {
   AiProvider,

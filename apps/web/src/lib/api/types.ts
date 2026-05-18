@@ -47,6 +47,7 @@ export interface Message {
   content: string;
   tokenCount: number | null;
   metadata: Record<string, unknown>;
+  instructionVersionId?: string | null;
   feedbackRating: string | null;
   createdAt: string;
 }

@@ -21,9 +21,17 @@ export function setAccessTokenGetter(fn: GetAccessToken): void {
 }
 
 function buildUrl(path: string): string {
-  const base = env.API_URL.replace(/\/$/, "");
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${base}/api/v1${normalized}`;
+  const apiPath = `/api/v1${normalized}`;
+
+  // Browser: same-origin via Next.js rewrite (next.config → backend). Avoids CORS and
+  // localhost vs 127.0.0.1 mismatches when the API is on a different port.
+  if (typeof window !== "undefined") {
+    return apiPath;
+  }
+
+  const base = env.API_URL.replace(/\/$/, "");
+  return `${base}${apiPath}`;
 }
 
 export async function apiRequest<T>(

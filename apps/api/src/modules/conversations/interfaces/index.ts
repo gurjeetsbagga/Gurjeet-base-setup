@@ -2,6 +2,7 @@ export type { ConversationView, ConversationMetadata } from "./conversation.inte
 export type {
   MessageView,
   MessageMetadata,
+  AppliedInstructionVersionRef,
   Citation,
   ToolCallRecord,
   SafetyFlag,

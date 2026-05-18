@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MASTER_INSTRUCTIONS_PROMPT } from "@/modules/ai/prompts/master-instructions.prompt";
 import { COMPANY_GUARDRAILS_PROMPT } from "@/modules/ai/prompts/company-guardrails.prompt";
 import { PROTOCOL_RULES_PROMPT } from "@/modules/ai/prompts/protocol-rules.prompt";
 import { ESCALATION_RULES_PROMPT } from "@/modules/ai/prompts/escalation-rules.prompt";
@@ -6,6 +7,11 @@ import { DISCLAIMER_PROMPT } from "@/modules/ai/prompts/disclaimer.prompt";
 import { EMERGENCY_ESCALATION_MESSAGE } from "@/modules/ai/guardrails/escalation-messages";
 
 describe("Prompt layers", () => {
+  it("includes master instructions", () => {
+    expect(MASTER_INSTRUCTIONS_PROMPT).toMatch(/wellness companion/i);
+    expect(MASTER_INSTRUCTIONS_PROMPT).toMatch(/NOT a physician/i);
+  });
+
   it("includes company guardrails", () => {
     expect(COMPANY_GUARDRAILS_PROMPT).toMatch(/must never/i);
     expect(COMPANY_GUARDRAILS_PROMPT).toMatch(/Diagnose/i);

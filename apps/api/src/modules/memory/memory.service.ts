@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
+import { AiAuditLogger } from "../../common/logger";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { normalizePagination, paginatedResponse } from "../../shared/pagination";
@@ -37,6 +38,7 @@ export class MemoryService {
     private readonly prisma: PrismaService,
     @Inject(MEMORY_RETRIEVER)
     private readonly retriever: MemoryRetriever,
+    @Optional() private readonly aiAudit?: AiAuditLogger,
   ) {
     this.logger.log(`Memory retriever: ${this.retriever.strategy}`);
   }
@@ -57,6 +59,12 @@ export class MemoryService {
     });
 
     this.logger.debug(`Memory stored: ${entry.id} type=${entry.type} user=${userId}`);
+    this.aiAudit?.logMemoryExtract({
+      userId,
+      memoryType: dto.type,
+      sourceId: dto.sourceId,
+      importance: dto.importance,
+    });
 
     return this.toEntryView(entry);
   }
@@ -157,6 +165,11 @@ export class MemoryService {
     });
 
     if (results.length === 0) {
+      this.aiAudit?.logMemoryRetrieve({
+        userId,
+        resultCount: 0,
+        queryLength: query.length,
+      });
       return {
         summary: "",
         entryCount: 0,
@@ -167,6 +180,12 @@ export class MemoryService {
     const summaryParts = results.map((r, i) => {
       const typeLabel = formatEntryType(r.entry.type);
       return `[${i + 1}] ${typeLabel}: ${truncate(r.entry.content, 300)}`;
+    });
+
+    this.aiAudit?.logMemoryRetrieve({
+      userId,
+      resultCount: results.length,
+      queryLength: query.length,
     });
 
     return {

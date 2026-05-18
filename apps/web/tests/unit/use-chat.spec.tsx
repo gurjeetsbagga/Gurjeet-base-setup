@@ -30,8 +30,7 @@ describe("useChat", () => {
     expect(result.current.messages[0]?.content).toMatch(/wellness companion/i);
   });
 
-  it("appends user message and demo reply when unauthenticated", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+  it("requires sign-in when unauthenticated (no local-only demo chat)", async () => {
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -39,18 +38,11 @@ describe("useChat", () => {
     });
 
     await act(async () => {
-      void result.current.sendMessage();
+      await result.current.sendMessage();
     });
 
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(3000);
-    });
-
-    await waitFor(() => {
-      expect(
-        result.current.messages.some((m) => m.role === "USER" && m.content === "I feel tired"),
-      ).toBe(true);
-    });
+    expect(result.current.error).toMatch(/sign in/i);
+    expect(conversationsApi.streamMessage).not.toHaveBeenCalled();
   });
 
   it("calls API when authenticated", async () => {

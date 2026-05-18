@@ -3,8 +3,9 @@ import {
   aiActionProposalSchema,
   aiOrchestratedResponseSchema,
   type AiActionProposal,
-  type AiOrchestratedResponse,
+  type NormalizedAiOrchestratedResponse,
 } from "../schemas/orchestrated-response.schema";
+import { normalizeOrchestratedResponse } from "../schemas/normalize-orchestrated-response";
 import { validateAiOutput, parseAiJson } from "../schemas/validate-ai-output";
 
 /**
@@ -27,7 +28,7 @@ export class AiResponseValidatorService {
   validateOrchestratedJson(
     raw: string,
     requestId: string,
-  ): { valid: true; data: AiOrchestratedResponse } | { valid: false; reason: string } {
+  ): { valid: true; data: NormalizedAiOrchestratedResponse } | { valid: false; reason: string } {
     const parsed = parseAiJson(raw);
     if (parsed === null) {
       return { valid: false, reason: "Invalid JSON in structured response" };
@@ -47,7 +48,7 @@ export class AiResponseValidatorService {
       return { valid: false, reason: actionCheck.reason };
     }
 
-    return { valid: true, data: result.data };
+    return { valid: true, data: normalizeOrchestratedResponse(result.data) };
   }
 
   /**

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { AiAuditLogger } from "../../../common/logger";
 import type { ProviderMessage } from "../providers";
 import { EMERGENCY_ESCALATION_MESSAGE, PHYSICIAN_ESCALATION_MESSAGE } from "./escalation-messages";
 
@@ -10,6 +11,8 @@ import { EMERGENCY_ESCALATION_MESSAGE, PHYSICIAN_ESCALATION_MESSAGE } from "./es
 @Injectable()
 export class AiGuardrailsService {
   private readonly logger = new Logger(AiGuardrailsService.name);
+
+  constructor(private readonly aiAudit: AiAuditLogger) {}
 
   preValidate(
     messages: ProviderMessage[],
@@ -24,9 +27,12 @@ export class AiGuardrailsService {
     const content = lastUserMessage.content;
 
     if (containsPromptInjection(content)) {
-      this.logger.warn(
-        `[${context.requestId}] Prompt injection detected from user ${context.userId}`,
-      );
+      this.aiAudit.logSafetyEvent({
+        requestId: context.requestId,
+        userId: context.userId,
+        code: "PROMPT_INJECTION",
+        message: "Prompt injection detected",
+      });
       return {
         allowed: false,
         reason: "Your message contains patterns that cannot be processed. Please rephrase.",
@@ -70,7 +76,12 @@ export class AiGuardrailsService {
     context: { userId: string; requestId: string },
   ): PostValidationResult {
     if (!content || content.trim().length === 0) {
-      this.logger.warn(`[${context.requestId}] Empty AI response`);
+      this.aiAudit.logValidationFailure({
+        requestId: context.requestId,
+        userId: context.userId,
+        reason: "empty_response",
+        stage: "post",
+      });
       return {
         safe: false,
         reason: "The AI returned an empty response. Please try again.",
@@ -97,7 +108,11 @@ export class AiGuardrailsService {
     }
 
     if (containsMedicalDiagnosis(content)) {
-      this.logger.warn(`[${context.requestId}] AI response contains potential medical diagnosis`);
+      this.aiAudit.logSafetyEvent({
+        requestId: context.requestId,
+        userId: context.userId,
+        code: "MEDICAL_DIAGNOSIS",
+      });
       return {
         safe: true,
         sanitized: appendWellnessDisclaimer(content),

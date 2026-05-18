@@ -5,6 +5,7 @@ export {
   openaiConfig,
   supabaseConfig,
   rateLimitConfig,
+  loggingConfig,
 } from "./configs";
 
 export type {
@@ -14,6 +15,8 @@ export type {
   OpenAIConfig,
   SupabaseConfig,
   RateLimitConfig,
+  LoggingConfig,
+  PinoLogLevel,
 } from "./configs";
 
 export { redactApiKey } from "./configs/openai.config";

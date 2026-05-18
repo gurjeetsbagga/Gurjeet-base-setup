@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon } from "@/components/auth/auth-icons";
 import { AuthInput } from "@/components/auth/auth-input";
@@ -9,10 +9,17 @@ import { cn } from "@/lib/utils";
 export interface LoginFormProps {
   onSubmit: (data: { email: string; password: string }) => Promise<void>;
   error?: string | null;
+  initialEmail?: string | null;
+  isReturning?: boolean;
 }
 
-export function LoginForm({ onSubmit, error }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+export function LoginForm({
+  onSubmit,
+  error,
+  initialEmail = "",
+  isReturning = false,
+}: LoginFormProps) {
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +27,10 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
   const [notice, setNotice] = useState<string | null>(null);
 
   const displayError = error ?? localError;
+
+  useEffect(() => {
+    if (initialEmail) setEmail(initialEmail);
+  }, [initialEmail]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -43,7 +54,7 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
     <>
       <div className="mb-8 md:mb-10">
         <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-foreground md:text-display">
-          Welcome back
+          {isReturning ? "Welcome back" : "Log in to your account"}
         </h1>
         <p className="mt-3 text-base text-muted-foreground md:text-body-lg">
           Sign in to continue your recovery journey.
@@ -52,11 +63,11 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 md:gap-6">
         <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-sm font-semibold text-foreground">
+          <label htmlFor="login-email" className="text-sm font-semibold text-foreground">
             Email address
           </label>
           <AuthInput
-            id="email"
+            id="login-email"
             type="email"
             required
             autoComplete="email"
@@ -68,19 +79,18 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <label htmlFor="password" className="text-sm font-semibold text-foreground">
+            <label htmlFor="login-password" className="text-sm font-semibold text-foreground">
               Password
             </label>
-            <button
-              type="button"
+            <Link
+              href="/forgot-password"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setNotice("Password reset is coming soon.")}
             >
               Forgot password?
-            </button>
+            </Link>
           </div>
           <AuthInput
-            id="password"
+            id="login-password"
             type={showPassword ? "text" : "password"}
             required
             minLength={8}

@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "./prisma/prisma.module";
 import { SupabaseModule } from "./integrations/supabase";
+import { MailModule } from "./integrations/mail/mail.module";
+import { AurynLoggerModule, CorrelationMiddleware } from "./common/logger";
 import { RequestIdMiddleware } from "./common/middleware";
 import { AurynThrottlerGuard } from "./common/throttle";
 import { THROTTLE_GLOBAL, THROTTLE_AI, THROTTLE_AUTH, THROTTLE_STRICT } from "./common/throttle";
@@ -14,6 +16,7 @@ import {
   openaiConfig,
   supabaseConfig,
   rateLimitConfig,
+  loggingConfig,
 } from "./config";
 import type { RateLimitConfig } from "./config";
 import { HealthModule } from "./modules/health/health.module";
@@ -35,8 +38,20 @@ import { AuditLogModule } from "./modules/audit-logs/audit-logs.module";
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env", "../../.env"],
-      load: [appConfig, databaseConfig, authConfig, openaiConfig, supabaseConfig, rateLimitConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        authConfig,
+        openaiConfig,
+        supabaseConfig,
+        rateLimitConfig,
+        loggingConfig,
+      ],
     }),
+
+    PrismaModule,
+
+    AurynLoggerModule,
 
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
@@ -53,8 +68,8 @@ import { AuditLogModule } from "./modules/audit-logs/audit-logs.module";
       },
     }),
 
-    PrismaModule,
     SupabaseModule,
+    MailModule,
 
     AuditLogModule,
 
@@ -80,6 +95,6 @@ import { AuditLogModule } from "./modules/audit-logs/audit-logs.module";
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestIdMiddleware).forRoutes("*");
+    consumer.apply(RequestIdMiddleware, CorrelationMiddleware).forRoutes("*");
   }
 }

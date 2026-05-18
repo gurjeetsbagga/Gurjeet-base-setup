@@ -6,7 +6,7 @@ import type { ChatMessage } from "@/components/chat/message-bubble";
 import * as conversationsApi from "@/lib/api/conversations";
 import { ApiClientError } from "@/lib/api/client";
 import { useStreamingText } from "./use-streaming-text";
-import { getAccessToken } from "@/lib/auth/session";
+import { hasUsableAccessToken } from "@/lib/auth/session";
 
 const WELCOME: ChatMessage = {
   id: "welcome",
@@ -15,19 +15,23 @@ const WELCOME: ChatMessage = {
     "Hello — I'm Auryn, your wellness companion. I'm here to listen, support your recovery journey, and help you explore what matters to you. How are you feeling today?",
 };
 
-const DEMO_REPLY =
-  "Thank you for sharing that with me. I hear you, and I want to support you in a calm, thoughtful way. When you're ready, we can explore gentle next steps for your wellness — always alongside guidance from your care team when needed.";
-
 function generateId(): string {
   return `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function useChat(conversationId?: string | null) {
+export type UseChatOptions = {
+  /** Navigate to `/chat/:id` after the first message in a new conversation (default: true). */
+  redirectOnCreate?: boolean;
+};
+
+export function useChat(conversationId?: string | null, options?: UseChatOptions) {
+  const redirectOnCreate = options?.redirectOnCreate !== false;
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
     conversationId ?? null,
@@ -42,9 +46,10 @@ export function useChat(conversationId?: string | null) {
   }, [conversationId]);
 
   useEffect(() => {
-    if (!conversationId || !getAccessToken()) return;
+    if (!conversationId || !hasUsableAccessToken()) return;
     let cancelled = false;
     setIsLoadingHistory(true);
+    setError(null);
     (async () => {
       try {
         const list = await conversationsApi.getMessages(conversationId);
@@ -61,8 +66,15 @@ export function useChat(conversationId?: string | null) {
             })),
           );
         }
-      } catch {
-        if (!cancelled) setMessages([WELCOME]);
+      } catch (err) {
+        if (!cancelled) {
+          setMessages([WELCOME]);
+          setError(
+            err instanceof ApiClientError
+              ? err.message
+              : "Could not load your conversation history.",
+          );
+        }
       } finally {
         if (!cancelled) setIsLoadingHistory(false);
       }
@@ -73,17 +85,18 @@ export function useChat(conversationId?: string | null) {
   }, [conversationId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    el?.scrollTo?.({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, displayText, isSending]);
 
-  const appendAssistantStreaming = useCallback(
-    async (fullText: string) => {
+  const appendAssistantError = useCallback(
+    async (text: string) => {
       const id = generateId();
       setStreamingMessageId(id);
       setMessages((prev) => [...prev, { id, role: "ASSISTANT", content: "", isStreaming: true }]);
-      await streamFullText(fullText);
+      await streamFullText(text);
       setMessages((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, content: fullText, isStreaming: false } : m)),
+        prev.map((m) => (m.id === id ? { ...m, content: text, isStreaming: false } : m)),
       );
       setStreamingMessageId(null);
       resetStream();
@@ -131,35 +144,52 @@ export function useChat(conversationId?: string | null) {
       const text = (overrideText ?? input).trim();
       if (!text || isSending) return;
 
+      if (!hasUsableAccessToken()) {
+        setError("Please sign in to continue our conversation.");
+        return;
+      }
+
+      setError(null);
       setMessages((prev) => [...prev, { id: generateId(), role: "USER", content: text }]);
       if (!overrideText) setInput("");
       setIsSending(true);
 
+      const startedWithoutConversation = !activeConversationId;
       try {
         let convId = activeConversationId;
-        if (getAccessToken()) {
-          if (!convId) {
-            const conv = await conversationsApi.createConversation();
-            convId = conv.id;
-            setActiveConversationId(convId);
-            router.replace(`/chat/${convId}`);
-          }
-          await streamFromApi(convId, text);
-        } else {
-          await new Promise((r) => setTimeout(r, 500));
-          await appendAssistantStreaming(DEMO_REPLY);
+        if (!convId) {
+          const conv = await conversationsApi.createConversation();
+          convId = conv.id;
+          setActiveConversationId(convId);
+        }
+        await streamFromApi(convId, text);
+        // Navigate only after the stream finishes — replacing the route mid-request
+        // remounts this hook and aborts the in-flight SSE response.
+        if (redirectOnCreate && startedWithoutConversation && convId) {
+          router.replace(`/chat/${convId}`, { scroll: false });
         }
       } catch (err) {
-        const fallback =
+        const message =
           err instanceof ApiClientError && err.status === 401
-            ? "Please sign in to continue our conversation with full personalization."
-            : DEMO_REPLY;
-        await appendAssistantStreaming(fallback);
+            ? "Your session expired. Please sign in again to continue."
+            : err instanceof ApiClientError
+              ? err.message
+              : "Something went wrong saving your message. Please try again.";
+        setError(message);
+        await appendAssistantError(message);
       } finally {
         setIsSending(false);
       }
     },
-    [input, isSending, activeConversationId, appendAssistantStreaming, streamFromApi, router],
+    [
+      input,
+      isSending,
+      activeConversationId,
+      appendAssistantError,
+      streamFromApi,
+      router,
+      redirectOnCreate,
+    ],
   );
 
   const displayMessages = messages.map((m) =>
@@ -181,5 +211,6 @@ export function useChat(conversationId?: string | null) {
     showWelcomeOnly,
     scrollRef,
     activeConversationId,
+    error,
   };
 }

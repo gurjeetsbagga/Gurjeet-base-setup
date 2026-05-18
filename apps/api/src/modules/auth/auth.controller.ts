@@ -2,12 +2,14 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/commo
 import { Throttle } from "@nestjs/throttler";
 import { Public } from "../../common/decorators/public.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
-import { THROTTLE_AUTH } from "../../common/throttle";
+import { THROTTLE_AUTH, THROTTLE_STRICT } from "../../common/throttle";
 import { successResponse } from "../../shared/api-response";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { toAuthClientDto } from "./dto/auth-client.dto";
 import type { AuthUser } from "./interfaces";
 
@@ -38,6 +40,24 @@ export class AuthController {
   async refresh(@Body() dto: RefreshTokenDto) {
     const result = await this.authService.refreshToken(dto);
     return successResponse(toAuthClientDto(result));
+  }
+
+  @Public()
+  @Throttle({ [THROTTLE_STRICT]: {} })
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const result = await this.authService.requestPasswordReset(dto.email);
+    return successResponse(result);
+  }
+
+  @Public()
+  @Throttle({ [THROTTLE_STRICT]: {} })
+  @Post("reset-password")
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const result = await this.authService.resetPassword(dto);
+    return successResponse(result);
   }
 
   @Post("logout")

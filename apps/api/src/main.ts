@@ -1,32 +1,31 @@
 import { NestFactory } from "@nestjs/core";
-import { Logger, ValidationPipe, VersioningType } from "@nestjs/common";
+import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
-import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
-import { StructuredLogger } from "./common/logger";
-import type { AppConfig } from "./config";
+import { RequestLoggerInterceptor } from "./common/logger";
+import type { AppConfig, LoggingConfig } from "./config";
 import { validateSecretBoundaries } from "./config/validate-secrets";
 
 async function bootstrap() {
   validateSecretBoundaries();
 
-  const isDev = process.env.NODE_ENV !== "production";
-
-  const logLevels = isDev
-    ? (["log", "error", "warn", "debug", "verbose"] as const)
-    : (["log", "error", "warn"] as const);
-
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
 
-  const structuredLogger = new StructuredLogger([...logLevels]);
-  app.useLogger(structuredLogger);
+  app.useLogger(app.get(Logger));
 
-  const logger = new Logger("Bootstrap");
   const configService = app.get(ConfigService);
   const appCfg = configService.get<AppConfig>("app")!;
+  const loggingCfg = configService.get<LoggingConfig>("logging")!;
+
+  const bootstrapLogger = app.get(Logger);
+  bootstrapLogger.log(
+    `Logging enabled=${loggingCfg.enabled} level=${loggingCfg.level} pretty=${loggingCfg.pretty}`,
+    "Bootstrap",
+  );
 
   app.enableCors({
     origin: appCfg.corsOrigins,
@@ -34,7 +33,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(app.get(RequestLoggerInterceptor));
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -55,7 +54,10 @@ async function bootstrap() {
   app.setGlobalPrefix("api", { exclude: ["health", "health/ready"] });
 
   await app.listen(appCfg.port, appCfg.host);
-  logger.log(`Auryn API running on http://${appCfg.host}:${appCfg.port} [${appCfg.nodeEnv}]`);
+  bootstrapLogger.log(
+    `Auryn API running on http://${appCfg.host}:${appCfg.port} [${appCfg.nodeEnv}]`,
+    "Bootstrap",
+  );
 }
 
 bootstrap();
