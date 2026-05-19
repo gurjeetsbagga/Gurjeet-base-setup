@@ -44,7 +44,15 @@ RUN cd apps/api && \
 
 # Prune devDependencies in place — keeps generated Prisma client
 # intact since @prisma/client is a production dependency.
-RUN pnpm prune --prod --config.confirm-modules-purge=false
+#
+# Flags:
+#   --config.confirm-modules-purge=false : skip the interactive prompt that
+#     pnpm v9+ shows before removing node_modules (no TTY in Docker).
+#   --ignore-scripts : avoid running the root `prepare` lifecycle (which
+#     invokes husky) after husky itself was just removed as a devDependency.
+RUN pnpm prune --prod \
+    --config.confirm-modules-purge=false \
+    --ignore-scripts
 
 # ── Production ────────────────────────────────────────────────────
 FROM base AS production
