@@ -2,7 +2,7 @@
 #  Auryn API — Multi-stage production Dockerfile
 #
 #  Designed for Railway deployment from a pnpm monorepo.
-#  Stages: deps → build → production (pruned runtime image).
+#  Stages: deps → build → production (self-contained runtime image).
 # ──────────────────────────────────────────────────────────────────
 
 # ── Base ──────────────────────────────────────────────────────────
@@ -25,8 +25,8 @@ RUN pnpm install --frozen-lockfile
 # ── Build ─────────────────────────────────────────────────────────
 FROM deps AS build
 
-# pnpm v9+ asks for interactive confirmation before purging node_modules
-# during `prune`; CI=true tells it (and other tools) we are non-interactive.
+# Mark this build as non-interactive so pnpm and npx do not prompt for
+# confirmation (no TTY is attached during a Docker build).
 ENV CI=true
 
 COPY packages/config/ ./packages/config/
@@ -39,37 +39,42 @@ RUN pnpm --filter @auryn/types build && \
 COPY apps/api/ ./apps/api/
 
 RUN cd apps/api && \
-    npx prisma generate && \
+    pnpm exec prisma generate && \
     pnpm build
 
-# Prune devDependencies in place — keeps generated Prisma client
-# intact since @prisma/client is a production dependency.
+# Use `pnpm deploy` to materialise a self-contained, symlink-free copy of
+# the API together with its production dependencies. `pnpm prune --prod`
+# is unsafe here because pnpm's hard-linked / symlinked `node_modules`
+# layout does not survive a stage-to-stage `COPY`, which surfaces as
+# "Cannot find module '@nestjs/core'" at runtime in the final image.
 #
-# Flags:
-#   --config.confirm-modules-purge=false : skip the interactive prompt that
-#     pnpm v9+ shows before removing node_modules (no TTY in Docker).
-#   --ignore-scripts : avoid running the root `prepare` lifecycle (which
-#     invokes husky) after husky itself was just removed as a devDependency.
-RUN pnpm prune --prod \
-    --config.confirm-modules-purge=false \
-    --ignore-scripts
+# `pnpm deploy` honours `.gitignore`, which excludes `dist/` and the
+# generated Prisma client — we restore both explicitly below.
+RUN pnpm --filter=@auryn/api deploy \
+    --prod \
+    --ignore-scripts \
+    /deploy
+
+# Restore the compiled output (excluded from `pnpm deploy` because it is
+# listed in the repo `.gitignore`).
+RUN cp -R /app/apps/api/dist /deploy/dist
+
+# Regenerate the Prisma client inside the deploy directory. `pnpm deploy`
+# performs a fresh production install, so the `.prisma/client` artefacts
+# generated against the build stage's `node_modules` are not present in
+# `/deploy`. Use the `prisma` CLI from the build stage (still on disk in
+# the build image, even though it is a devDependency) so we do not need
+# a network call at this point in the build.
+RUN cd /deploy && /app/apps/api/node_modules/.bin/prisma generate
 
 # ── Production ────────────────────────────────────────────────────
 FROM base AS production
 
 ENV NODE_ENV=production
 
-COPY --from=build /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/.npmrc ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-COPY --from=build /app/apps/api/prisma ./apps/api/prisma
-COPY --from=build /app/apps/api/package.json ./apps/api/
-COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=build /app/packages/types/dist ./packages/types/dist
-COPY --from=build /app/packages/types/package.json ./packages/types/
-COPY --from=build /app/packages/utils/dist ./packages/utils/dist
-COPY --from=build /app/packages/utils/package.json ./packages/utils/
-COPY --from=build /app/packages/config ./packages/config
+# Single self-contained tree from `pnpm deploy` — no further file
+# wrangling needed between stages.
+COPY --from=build /deploy /app/apps/api
 
 WORKDIR /app/apps/api
 
