@@ -48,9 +48,18 @@ RUN cd apps/api && \
 # layout does not survive a stage-to-stage `COPY`, which surfaces as
 # "Cannot find module '@nestjs/core'" at runtime in the final image.
 #
+# Flags:
+#   --legacy : pnpm v10+ refuses non-injected workspace deploys unless
+#     this flag (or `inject-workspace-packages=true` in `.npmrc`) is set.
+#     We keep the workspace uninjected and opt in per-build instead.
+#   --prod : drop devDependencies from the deployed tree.
+#   --ignore-scripts : skip the root `prepare` hook (which calls husky)
+#     while the deploy directory is being assembled.
+#
 # `pnpm deploy` honours `.gitignore`, which excludes `dist/` and the
 # generated Prisma client — we restore both explicitly below.
 RUN pnpm --filter=@auryn/api deploy \
+    --legacy \
     --prod \
     --ignore-scripts \
     /deploy
