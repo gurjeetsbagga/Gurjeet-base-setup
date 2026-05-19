@@ -33,7 +33,8 @@ COPY packages/config/ ./packages/config/
 COPY packages/types/ ./packages/types/
 COPY packages/utils/ ./packages/utils/
 
-RUN pnpm --filter @auryn/types build && \
+RUN pnpm --filter @auryn/config build && \
+    pnpm --filter @auryn/types build && \
     pnpm --filter @auryn/utils build
 
 COPY apps/api/ ./apps/api/
@@ -67,6 +68,15 @@ RUN pnpm --filter=@auryn/api deploy \
 # Restore the compiled output (excluded from `pnpm deploy` because it is
 # listed in the repo `.gitignore`).
 RUN cp -R /app/apps/api/dist /deploy/dist
+
+# Restore the compiled `@auryn/config` output into the deployed workspace
+# dep. The package now declares `dist/` in its `files` field, but we also
+# overwrite it defensively in case `pnpm deploy` filters it out — without
+# the compiled JS, the API crashes at startup with
+# `ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING` (Node 22 refuses to strip
+# types from `.ts` files inside `node_modules`).
+RUN rm -rf /deploy/node_modules/@auryn/config/dist && \
+    cp -R /app/packages/config/dist /deploy/node_modules/@auryn/config/dist
 
 # Regenerate the Prisma client inside the deploy directory. `pnpm deploy`
 # performs a fresh production install, so the `.prisma/client` artefacts

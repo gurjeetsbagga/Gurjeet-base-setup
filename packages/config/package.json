@@ -8,22 +8,29 @@
     "./typescript/*": "./typescript/*",
     "./env": {
       "types": "./env/env.ts",
-      "default": "./env/env.ts"
+      "default": "./dist/env/env.js"
     },
     "./env/urls": {
       "types": "./env/urls.ts",
-      "default": "./env/urls.ts"
+      "default": "./dist/env/urls.js"
     },
     "./limits": {
       "types": "./limits.ts",
-      "default": "./limits.ts"
+      "default": "./dist/limits.js"
     }
   },
+  "files": [
+    "dist",
+    "typescript",
+    "env",
+    "limits.ts"
+  ],
   "scripts": {
+    "build": "tsc --build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint env/ --max-warnings 0",
     "lint:fix": "eslint env/ --fix",
-    "clean": "rm -rf .turbo *.tsbuildinfo"
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "devDependencies": {
     "@eslint/js": "^9",
