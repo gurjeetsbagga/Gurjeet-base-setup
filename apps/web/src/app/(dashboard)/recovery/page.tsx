@@ -2,7 +2,7 @@ import { PhysicianOsRecoveryView } from "@/components/recovery/physicianos-recov
 import { mockPhysicianOsRecoveryData } from "@/lib/recovery/mock-data";
 
 export const metadata = {
-  title: "PhysicianOS Recovery | Hey Auryn",
+  title: "Recovery | Hey Auryn",
   description: "ACL recovery protocol, healing timeline, and wellness metrics.",
 };
 

@@ -7,7 +7,7 @@ describe("RecoverySummaryCard", () => {
   it("renders protocol title, subtitle, and progress", () => {
     render(<RecoverySummaryCard protocol={mockPhysicianOsRecoveryData.protocol} />);
 
-    expect(screen.getByText("PhysicianOS")).toBeInTheDocument();
+    expect(screen.getByText("Recovery Protocol")).toBeInTheDocument();
     expect(screen.getByText(/acl reconstruction/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/42% complete/i)).toBeInTheDocument();
   });

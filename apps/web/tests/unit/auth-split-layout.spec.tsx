@@ -10,7 +10,7 @@ describe("AuthSplitLayout", () => {
       </AuthSplitLayout>,
     );
 
-    expect(screen.getByText("PhysicianOS")).toBeInTheDocument();
+    expect(screen.getByText("Auryn")).toBeInTheDocument();
     expect(screen.getByText(/personalized recovery/i)).toBeInTheDocument();
     expect(screen.queryByText(/marcus a/i)).not.toBeInTheDocument();
     expect(screen.getByText("Form slot")).toBeInTheDocument();

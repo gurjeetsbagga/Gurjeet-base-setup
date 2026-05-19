@@ -39,7 +39,7 @@ export const mockDashboardHomeData: DashboardHomeData = {
     },
     {
       id: "physicianos",
-      title: "PhysicianOS",
+      title: "Recovery",
       subtitle: "ACL recovery · Phase 2",
       highlight: "Recovery protocol",
       href: "/recovery",
@@ -52,8 +52,8 @@ export const mockDashboardHealthViewData: DashboardHealthViewData = {
   breadcrumb: "",
   physician: {
     id: "physicianos-1",
-    name: "PhysicianOS",
-    credentials: "Dr. Michael Anderson, MD",
+    name: "Dr. Michael Anderson",
+    credentials: "MD",
     specialty: "Functional & Longevity Medicine",
     status: "connected",
   },

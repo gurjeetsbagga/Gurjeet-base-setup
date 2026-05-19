@@ -8,7 +8,7 @@ export const mockPhysicianOsRecoveryData: PhysicianOsRecoveryData = {
     statusLabel: "On track",
   },
   protocol: {
-    title: "PhysicianOS",
+    title: "Recovery Protocol",
     subtitle: "ACL Reconstruction (Right Knee) — Phase 2 Strength & Mobility",
     progressPercent: 42,
   },

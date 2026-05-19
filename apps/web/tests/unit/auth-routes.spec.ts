@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 import { isAuthOnlyPath, isProtectedPath } from "@/lib/auth/routes";
 
 describe("auth routes", () => {
-  it("detects protected dashboard and chat paths", () => {
+  it("detects protected dashboard paths", () => {
     expect(isProtectedPath("/dashboard")).toBe(true);
     expect(isProtectedPath("/dashboard/health")).toBe(true);
-    expect(isProtectedPath("/chat")).toBe(true);
-    expect(isProtectedPath("/chat/abc-123")).toBe(true);
     expect(isProtectedPath("/plan")).toBe(true);
     expect(isProtectedPath("/onboarding")).toBe(true);
+  });
+
+  it("treats /chat as public (anonymous preview, see lib/chat/anonymous-chat)", () => {
+    expect(isProtectedPath("/chat")).toBe(false);
+    expect(isProtectedPath("/chat/abc-123")).toBe(false);
   });
 
   it("detects auth-only paths", () => {

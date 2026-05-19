@@ -1,4 +1,4 @@
-import { PhysicianOsLogoIcon, StarBadgeIcon } from "@/components/auth/auth-icons";
+import { AurynMarkIcon, StarBadgeIcon } from "@/components/auth/auth-icons";
 import type { ReturningUserProfile } from "@/lib/auth/returning-user";
 import { cn } from "@/lib/utils";
 
@@ -72,8 +72,8 @@ export function AuthSplitLayout({
     <div className="flex min-h-dvh w-full flex-col bg-surface md:flex-row">
       <div className="flex min-h-dvh w-full flex-col bg-surface md:w-1/2 lg:w-[52%]">
         <header className="flex items-center gap-2.5 px-8 py-6 sm:px-10 md:py-8 lg:px-14">
-          <PhysicianOsLogoIcon className="size-8 shrink-0 text-auth-brand" />
-          <span className="text-lg font-semibold tracking-tight text-foreground">PhysicianOS</span>
+          <AurynMarkIcon className="size-8 shrink-0" />
+          <span className="text-lg font-semibold tracking-tight text-foreground">Auryn</span>
         </header>
         <div className="flex flex-1 flex-col justify-center px-8 pb-12 sm:px-10 md:px-12 md:pb-16 lg:px-16">
           <div className="mx-auto w-full max-w-[26rem]">{children}</div>
