@@ -25,6 +25,10 @@ RUN pnpm install --frozen-lockfile
 # ── Build ─────────────────────────────────────────────────────────
 FROM deps AS build
 
+# pnpm v9+ asks for interactive confirmation before purging node_modules
+# during `prune`; CI=true tells it (and other tools) we are non-interactive.
+ENV CI=true
+
 COPY packages/config/ ./packages/config/
 COPY packages/types/ ./packages/types/
 COPY packages/utils/ ./packages/utils/
@@ -40,7 +44,7 @@ RUN cd apps/api && \
 
 # Prune devDependencies in place — keeps generated Prisma client
 # intact since @prisma/client is a production dependency.
-RUN pnpm prune --prod
+RUN pnpm prune --prod --config.confirm-modules-purge=false
 
 # ── Production ────────────────────────────────────────────────────
 FROM base AS production
