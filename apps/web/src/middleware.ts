@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isAuthOnlyPath, isProtectedPath, MIDDLEWARE_MATCHER } from "@/lib/auth/routes";
+import { isAuthOnlyPath, isProtectedPath } from "@/lib/auth/routes";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/session-cookie";
 
 function hasSession(request: NextRequest): boolean {
@@ -29,5 +29,18 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [...MIDDLEWARE_MATCHER],
+  matcher: [
+    "/dashboard/:path*",
+    "/chat/:path*",
+    "/plan",
+    "/recovery",
+    "/private-brain",
+    "/settings",
+    "/profile",
+    "/onboarding",
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
+  ],
 };

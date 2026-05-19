@@ -32,18 +32,9 @@ export function isAuthOnlyPath(pathname: string): boolean {
   );
 }
 
-/** Paths checked by Next.js middleware (see `middleware.ts`). */
-export const MIDDLEWARE_MATCHER = [
-  "/dashboard/:path*",
-  "/chat/:path*",
-  "/plan",
-  "/recovery",
-  "/private-brain",
-  "/settings",
-  "/profile",
-  "/onboarding",
-  "/login",
-  "/signup",
-  "/forgot-password",
-  "/reset-password",
-] as const;
+/**
+ * Paths checked by Next.js middleware are declared inline in `middleware.ts`.
+ * Next.js statically parses the exported `config` and cannot follow imports
+ * or spread expressions, so the matcher must live alongside the middleware.
+ * Keep that literal array in sync with the prefixes above when adding routes.
+ */
