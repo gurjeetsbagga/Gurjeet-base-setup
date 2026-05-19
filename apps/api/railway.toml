@@ -18,7 +18,11 @@ watchPatterns = [
 ]
 
 [deploy]
-startCommand = "node apps/api/dist/main.js"
+# The Dockerfile sets WORKDIR /app/apps/api in the production stage, so the
+# startCommand is resolved relative to that path. Using "apps/api/dist/main.js"
+# here would resolve to /app/apps/api/apps/api/dist/main.js and crash with
+# MODULE_NOT_FOUND before the health check could ever pass.
+startCommand = "node dist/main.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 10
 restartPolicyType = "ON_FAILURE"
