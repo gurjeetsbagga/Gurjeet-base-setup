@@ -22,9 +22,18 @@ watchPatterns = [
 # startCommand is resolved relative to that path. Using "apps/api/dist/main.js"
 # here would resolve to /app/apps/api/apps/api/dist/main.js and crash with
 # MODULE_NOT_FOUND before the health check could ever pass.
-startCommand = "node dist/main.js"
+#
+# `prisma migrate deploy` is idempotent — already-applied migrations are
+# skipped — so it is safe to run on every boot. This keeps the database
+# schema in lock-step with the deployed code without requiring an operator
+# to run migrations manually from a laptop after each release.
+startCommand = "node_modules/.bin/prisma migrate deploy && node dist/main.js"
 healthcheckPath = "/health"
-healthcheckTimeout = 10
+# 60 seconds (was 10s). Migrate-on-boot adds a few seconds for empty
+# migration runs and can take longer for real schema changes, so the
+# previous tight window risked false-positive healthcheck failures even
+# when the API itself was fine.
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 numReplicas = 1

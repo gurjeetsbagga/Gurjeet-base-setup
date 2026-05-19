@@ -36,7 +36,7 @@ CREATE TABLE "users" (
     "id" UUID NOT NULL,
     "auth_id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT,
+    "password_hash" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'USER',
     "display_name" TEXT,
     "avatar_url" TEXT,
