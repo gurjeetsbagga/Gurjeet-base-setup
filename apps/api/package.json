@@ -32,6 +32,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@auryn/config": "workspace:*",
     "@auryn/types": "workspace:*",
     "@auryn/utils": "workspace:*",
     "@nestjs/common": "^11",
@@ -53,7 +54,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@auryn/config": "workspace:*",
     "@eslint/js": "^9",
     "@nestjs/cli": "^11",
     "@nestjs/schematics": "^11",

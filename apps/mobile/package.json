@@ -18,6 +18,7 @@
     "clean": "rm -rf .expo dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@auryn/config": "workspace:*",
     "@auryn/types": "workspace:*",
     "@auryn/utils": "workspace:*",
     "expo": "~53",
@@ -32,7 +33,6 @@
     "react-native-screens": "~4"
   },
   "devDependencies": {
-    "@auryn/config": "workspace:*",
     "@eslint/js": "^9",
     "@types/react": "^19",
     "eslint": "^9",
