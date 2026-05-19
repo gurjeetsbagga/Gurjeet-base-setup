@@ -1,9 +1,14 @@
 /** Route guard configuration — keep matchers in sync with `middleware.ts`. */
 
-/** Requires a valid session (dashboard, chat, profile, etc.). */
+/**
+ * Requires a valid session.
+ *
+ * Note: `/chat` is intentionally NOT protected — anonymous visitors can
+ * preview the experience (capped to 5 messages, then a login gate fires).
+ * See `lib/chat/anonymous-chat.ts` for the limit logic.
+ */
 export const PROTECTED_ROUTE_PREFIXES = [
   "/dashboard",
-  "/chat",
   "/plan",
   "/recovery",
   "/private-brain",

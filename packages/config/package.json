@@ -13,6 +13,10 @@
     "./env/urls": {
       "types": "./env/urls.ts",
       "default": "./env/urls.ts"
+    },
+    "./limits": {
+      "types": "./limits.ts",
+      "default": "./limits.ts"
     }
   },
   "scripts": {
