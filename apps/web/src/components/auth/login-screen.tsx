@@ -1,35 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
-import { LoginForm } from "@/components/auth/login-form";
-import {
-  getLastLoginEmail,
-  getReturningUserProfile,
-  isReturningUser,
-  type ReturningUserProfile,
-} from "@/lib/auth/returning-user";
+import { AuthModalPage } from "@/components/auth/auth-modal-page";
 
 export interface LoginScreenProps {
-  onSubmit: (data: { email: string; password: string }) => Promise<void>;
+  redirectTo?: string;
 }
 
-/** Single split-screen login for all users (returning users get email + testimonial name). */
-export function LoginScreen({ onSubmit }: LoginScreenProps) {
-  const [returningProfile, setReturningProfile] = useState<ReturningUserProfile | null>(null);
-  const [initialEmail, setInitialEmail] = useState("");
-  const [isReturning, setIsReturning] = useState(false);
-
-  useEffect(() => {
-    const returning = isReturningUser();
-    setIsReturning(returning);
-    setReturningProfile(getReturningUserProfile());
-    setInitialEmail(getLastLoginEmail() ?? "");
-  }, []);
-
-  return (
-    <AuthSplitLayout returningProfile={returningProfile}>
-      <LoginForm onSubmit={onSubmit} initialEmail={initialEmail} isReturning={isReturning} />
-    </AuthSplitLayout>
-  );
+/** Login route — ChatGPT-style modal over a calm backdrop. */
+export function LoginScreen({ redirectTo = "/chat" }: LoginScreenProps) {
+  return <AuthModalPage defaultView="login" redirectTo={redirectTo} />;
 }

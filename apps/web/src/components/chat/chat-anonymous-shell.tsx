@@ -11,6 +11,7 @@ export interface ChatAnonymousShellProps {
   /** The chat conversation panel (input + messages). */
   children: ReactNode;
   onSignInClick?: () => void;
+  onSignUpClick?: () => void;
 }
 
 /**
@@ -25,6 +26,7 @@ export function ChatAnonymousShell({
   totalMessages,
   children,
   onSignInClick,
+  onSignUpClick,
 }: ChatAnonymousShellProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -56,9 +58,9 @@ export function ChatAnonymousShell({
             <Link
               href="/signup"
               onClick={(e) => {
-                if (onSignInClick) {
+                if (onSignUpClick ?? onSignInClick) {
                   e.preventDefault();
-                  onSignInClick();
+                  (onSignUpClick ?? onSignInClick)!();
                 }
               }}
               className="inline-flex h-9 items-center justify-center rounded-full bg-auth-brand px-4 text-sm font-semibold text-auth-brand-foreground transition-opacity hover:opacity-95"

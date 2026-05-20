@@ -73,3 +73,24 @@ export function saveReturningUserProfile(user: {
   localStorage.setItem(RETURNING_USER_KEY, "1");
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
 }
+
+/** Forget saved account on this device (Welcome back → remove account). */
+export function clearReturningUserProfile(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(RETURNING_USER_KEY);
+  localStorage.removeItem(PROFILE_KEY);
+}
+
+const WELCOME_MODAL_SESSION_KEY = "auryn_welcome_modal_shown";
+
+/** Auto-show Welcome back once per browser session on chat. */
+export function shouldShowWelcomeBackModal(): boolean {
+  if (typeof window === "undefined") return false;
+  if (!isReturningUser() || !getReturningUserProfile()) return false;
+  return sessionStorage.getItem(WELCOME_MODAL_SESSION_KEY) !== "1";
+}
+
+export function markWelcomeBackModalShown(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(WELCOME_MODAL_SESSION_KEY, "1");
+}
