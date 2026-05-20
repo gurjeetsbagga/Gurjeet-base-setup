@@ -106,11 +106,12 @@ COPY --from=build /app/apps/api/scripts /app/apps/api/scripts
 
 WORKDIR /app/apps/api
 
-RUN chmod +x scripts/migrate-and-start.sh
+RUN chmod +x scripts/migrate-and-start.sh scripts/healthcheck-db.js
 
 EXPOSE 4000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+# start-period must cover migrate deploy on cold boot (see migrate-and-start.sh).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${API_PORT:-4000}/health || exit 1
 
 CMD ["sh", "scripts/migrate-and-start.sh"]

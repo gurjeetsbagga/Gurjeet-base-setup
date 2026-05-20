@@ -3,10 +3,11 @@ import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
-import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
-import { RequestLoggerInterceptor } from "./common/logger";
-import type { AppConfig, LoggingConfig } from "./config";
-import { validateSecretBoundaries } from "./config/validate-secrets";
+import { logDeploymentMetadata, registerGracefulShutdown } from "./common/bootstrap";
+import { AllExceptionsFilter } from "@/common/filters/http-exception.filter";
+import { RequestLoggerInterceptor } from "@/common/logger";
+import type { AppConfig, LoggingConfig } from "@/config";
+import { validateSecretBoundaries } from "@/config/validate-secrets";
 
 async function bootstrap() {
   validateSecretBoundaries();
@@ -22,6 +23,7 @@ async function bootstrap() {
   const loggingCfg = configService.get<LoggingConfig>("logging")!;
 
   const bootstrapLogger = app.get(Logger);
+  logDeploymentMetadata(bootstrapLogger);
   bootstrapLogger.log(
     `Logging enabled=${loggingCfg.enabled} level=${loggingCfg.level} pretty=${loggingCfg.pretty}`,
     "Bootstrap",
@@ -54,6 +56,7 @@ async function bootstrap() {
   app.setGlobalPrefix("api", { exclude: ["health", "health/ready"] });
 
   await app.listen(appCfg.port, appCfg.host);
+  registerGracefulShutdown(app, bootstrapLogger);
   bootstrapLogger.log(
     `Auryn API running on http://${appCfg.host}:${appCfg.port} [${appCfg.nodeEnv}]`,
     "Bootstrap",

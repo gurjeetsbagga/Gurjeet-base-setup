@@ -23,10 +23,9 @@ watchPatterns = [
 # here would resolve to /app/apps/api/apps/api/dist/main.js and crash with
 # MODULE_NOT_FOUND before the health check could ever pass.
 #
-# `prisma migrate deploy` is idempotent — already-applied migrations are
-# skipped — so it is safe to run on every boot. This keeps the database
-# schema in lock-step with the deployed code without requiring an operator
-# to run migrations manually from a laptop after each release.
+# MANDATORY: migrate deploy before API start (NEVER db push in production).
+# See docs/engineering/railway-prisma-deployment.md
+# Script logs datasource host, fails container if migrate deploy fails.
 startCommand = "sh scripts/migrate-and-start.sh"
 healthcheckPath = "/health"
 # 60 seconds (was 10s). Migrate-on-boot adds a few seconds for empty
