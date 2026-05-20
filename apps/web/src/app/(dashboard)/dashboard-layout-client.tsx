@@ -22,7 +22,8 @@ function initialsFromUser(email?: string | null, displayName?: string | null): s
 export function DashboardLayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const isExplore = pathname.startsWith("/chat") || pathname.startsWith("/plan");
+  const isExplore =
+    pathname === "/" || pathname.startsWith("/chat") || pathname.startsWith("/plan");
 
   if (isExplore) {
     return <>{children}</>;

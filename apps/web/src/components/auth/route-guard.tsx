@@ -84,7 +84,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 /** @deprecated Prefer global RouteGuard — kept for explicit auth page wrappers */
 export function RedirectIfAuthenticated({
   children,
-  fallback = "/dashboard",
+  fallback = "/",
 }: {
   children: ReactNode;
   fallback?: string;

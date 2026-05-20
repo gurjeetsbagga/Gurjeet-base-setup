@@ -1,6 +1,11 @@
-import { redirect } from "next/navigation";
+import { ChatExploreLayout } from "@/components/chat/chat-explore-layout";
 
-/** Root URL shows the Figma split login experience */
+export const metadata = {
+  title: "Hey Auryn",
+  description: "Your AI wellness companion for recovery and daily habits.",
+};
+
+/** Home — anonymous preview or authenticated chat (ChatGPT-style entry). */
 export default function HomePage() {
-  redirect("/login");
+  return <ChatExploreLayout />;
 }

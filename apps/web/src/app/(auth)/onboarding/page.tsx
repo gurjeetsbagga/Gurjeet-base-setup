@@ -14,7 +14,7 @@ export default function OnboardingPage() {
         initial={loadProfile()}
         onComplete={(profile) => {
           saveProfile(profile);
-          router.push("/chat");
+          router.push("/");
         }}
       />
     </AuthSplitLayout>

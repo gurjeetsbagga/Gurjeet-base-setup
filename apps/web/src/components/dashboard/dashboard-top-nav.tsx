@@ -27,7 +27,7 @@ export function DashboardTopNav({
                 : tab.id === "plans"
                   ? pathname.startsWith("/plan")
                   : tab.id === "messages"
-                    ? pathname.startsWith("/chat")
+                    ? pathname === "/" || pathname.startsWith("/chat")
                     : pathname.startsWith(tab.href);
 
           return (

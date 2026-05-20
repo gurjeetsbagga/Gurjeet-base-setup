@@ -5,6 +5,7 @@ export interface DashboardPageMeta {
 }
 
 const PAGE_META: Record<string, DashboardPageMeta> = {
+  "/": { breadcrumb: "" },
   "/dashboard": { breadcrumb: mockDashboardHomeData.breadcrumb },
   "/private-brain": { breadcrumb: "" },
   "/recovery": { breadcrumb: "" },
@@ -14,8 +15,8 @@ const PAGE_META: Record<string, DashboardPageMeta> = {
 };
 
 export function getDashboardPageMeta(pathname: string): DashboardPageMeta {
-  if (pathname.startsWith("/chat/")) {
-    return PAGE_META["/chat"]!;
+  if (pathname === "/" || pathname.startsWith("/chat/")) {
+    return PAGE_META["/"] ?? PAGE_META["/chat"]!;
   }
   if (PAGE_META[pathname]) return PAGE_META[pathname]!;
   if (pathname.startsWith("/dashboard/health")) {

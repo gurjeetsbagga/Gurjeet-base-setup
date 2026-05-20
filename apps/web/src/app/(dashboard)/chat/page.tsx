@@ -1,9 +1,6 @@
-import { ChatExploreLayout } from "@/components/chat/chat-explore-layout";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Messages",
-};
-
+/** Canonical chat home is `/`. */
 export default function ChatPage() {
-  return <ChatExploreLayout />;
+  redirect("/");
 }

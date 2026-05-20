@@ -9,7 +9,8 @@ describe("auth routes", () => {
     expect(isProtectedPath("/onboarding")).toBe(true);
   });
 
-  it("treats /chat as public (anonymous preview, see lib/chat/anonymous-chat)", () => {
+  it("treats home and /chat as public (anonymous preview, see lib/chat/anonymous-chat)", () => {
+    expect(isProtectedPath("/")).toBe(false);
     expect(isProtectedPath("/chat")).toBe(false);
     expect(isProtectedPath("/chat/abc-123")).toBe(false);
   });

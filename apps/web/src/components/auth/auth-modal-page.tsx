@@ -14,7 +14,7 @@ export interface AuthModalPageProps {
 /**
  * Full-page auth entry (`/login`, `/signup`) using the same modal as chat.
  */
-export function AuthModalPage({ defaultView, redirectTo = "/chat" }: AuthModalPageProps) {
+export function AuthModalPage({ defaultView, redirectTo = "/" }: AuthModalPageProps) {
   const router = useRouter();
 
   const initialView = useMemo((): AuthModalView => {
@@ -30,7 +30,7 @@ export function AuthModalPage({ defaultView, redirectTo = "/chat" }: AuthModalPa
         open
         initialView={initialView}
         redirectTo={redirectTo}
-        onClose={() => router.push("/chat")}
+        onClose={() => router.push("/")}
       />
     </div>
   );

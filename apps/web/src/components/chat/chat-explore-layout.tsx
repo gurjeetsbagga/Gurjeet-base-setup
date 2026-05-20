@@ -116,7 +116,7 @@ function AnonymousChatExperience() {
           closeAuthModal();
         }}
         initialView={modalView}
-        redirectTo="/chat"
+        redirectTo="/"
         onAuthenticated={chat.resetAnonymousChat}
         trackWelcomeSession
       />

@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
 
   if (isAuthOnlyPath(pathname) && session) {
     const destination = request.nextUrl.clone();
-    destination.pathname = "/dashboard";
+    destination.pathname = "/";
     destination.search = "";
     return NextResponse.redirect(destination);
   }

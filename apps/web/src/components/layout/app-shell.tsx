@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth/auth-provider";
 import { ConversationList, type ConversationListItem } from "@/components/chat/conversation-list";
 
 const navItems = [
-  { href: "/chat", label: "Chat" },
+  { href: "/", label: "Chat" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
 ];
