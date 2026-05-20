@@ -95,11 +95,22 @@ ENV NODE_ENV=production
 # wrangling needed between stages.
 COPY --from=build /deploy /app/apps/api
 
+# `prisma` is a devDependency — omitted from `pnpm deploy --prod`, but we must
+# run `prisma migrate deploy` on every container start. Copy CLI + engines from
+# the build stage and ensure migration SQL is present.
+COPY --from=build /app/apps/api/node_modules/prisma /app/apps/api/node_modules/prisma
+COPY --from=build /app/apps/api/node_modules/@prisma /app/apps/api/node_modules/@prisma
+COPY --from=build /app/apps/api/node_modules/.bin/prisma /app/apps/api/node_modules/.bin/prisma
+COPY --from=build /app/apps/api/prisma /app/apps/api/prisma
+COPY --from=build /app/apps/api/scripts /app/apps/api/scripts
+
 WORKDIR /app/apps/api
+
+RUN chmod +x scripts/migrate-and-start.sh
 
 EXPOSE 4000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${API_PORT:-4000}/health || exit 1
 
-CMD ["node", "dist/main.js"]
+CMD ["sh", "scripts/migrate-and-start.sh"]
